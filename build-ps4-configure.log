@@ -1,0 +1,127 @@
+Setting top to                                               : /root/work/hlsdk-portable 
+Setting out to                                               : /root/work/hlsdk-portable/build 
+Build type                                                   : humanrights 
+LTO build                                                    : no 
+PolyOpt build                                                : no 
+OpenMP build                                                 : no 
+Generate profile                                             : no 
+Use profile                                                  : not found 
+Checking for program 'clang-18'                              : /usr/bin/clang-18 
+Checking for program 'clang++-18'                            : /usr/bin/clang++-18 
+Checking for program 'llvm-ar-18'                            : /usr/bin/llvm-ar-18 
+Checking for program 'llvm-strip-18'                         : /usr/bin/llvm-strip-18 
+Selected OpenOrbis toolchain                                 : /root/oo/OpenOrbis/PS4Toolchain 
+Checking for 'gcc' (C compiler)                              : not found 
+Checking for 'clang' (C compiler)                            : /usr/bin/clang-18 --target=x86_64-pc-freebsd12-elf -D__ORBIS__ 
+Target OS                                                    : ps4 
+Target CPU                                                   : x86_64 
+Target binfmt                                                : elf 
+Checking for 'g++' (C++ compiler)                            : not found 
+Checking for 'clang++' (C++ compiler)                        : /usr/bin/clang++-18 --target=x86_64-pc-freebsd12-elf -D__ORBIS__ 
+Target OS                                                    : ps4 
+Target CPU                                                   : x86_64 
+Target binfmt                                                : elf 
+Compiling PS4 working directory emulation                    : ok 
+Checking for c flags '-MMD'                                  : yes 
+Checking for cxx flags '-MMD'                                : yes 
+Checking for program 'strip'                                 : /usr/bin/llvm-strip-18 
+Checking for program '/usr/bin/llvm-strip-objcopy'           : not found 
+Checking for program 'objcopy'                               : /usr/bin/objcopy 
+Checking if 'clang' generates 32-bit code                    : no 
+Checking for strlcpy                                         : yes 
+Checking for strlcat                                         : yes 
+Checking for required C flags                                : yes 
+Checking for required C++ flags                              : yes 
+Checking supported flags for clang in parallel               : started 
+... -Werror=bool-operation                                   : yes 
+... -Werror=string-compare                                   : yes 
+... -Werror=implicit-fallthrough=2                           : no 
+... -Werror=bool-compare                                     : no 
+... -Werror=implicit-int                                     : yes 
+... -Werror=sizeof-pointer-memaccess                         : yes 
+... -Wunintialized                                           : no 
+... -Werror=return-type                                      : yes 
+... -Winit-self                                              : yes 
+... -Werror=cast-align=strict                                : no 
+... -Werror=packed-not-aligned                               : no 
+... -Werror=vla                                              : yes 
+... -Werror=incompatible-pointer-types                       : yes 
+... -Werror=tautological-compare                             : yes 
+... -Werror=sizeof-array-div                                 : yes 
+... -fnonconst-initializers                                  : no 
+... -Werror=duplicated-cond                                  : no 
+... -Wmisleading-indentation                                 : yes 
+... -Werror=parentheses                                      : yes 
+... -Werror=int-conversion                                   : yes 
+... -Werror=use-after-free=3                                 : no 
+... -Werror=implicit-function-declaration                    : yes 
+... -Werror=sequence-point                                   : yes 
+... -Werror=write-strings                                    : yes 
+... -Werror=jump-misses-init                                 : no 
+... -Werror=enum-conversion                                  : yes 
+... -Werror=sizeof-pointer-div                               : yes 
+... -Werror=packed                                           : yes 
+... -fdiagnostics-color=always                               : yes 
+-> processing test results                                   : 9 test failed 
+Checking supported flags for clang++ in parallel             : started 
+... -Werror=bool-operation                                   : yes 
+... -Werror=string-compare                                   : yes 
+... -Winit-self                                              : yes 
+... -Werror=sizeof-pointer-div                               : yes 
+... -Werror=packed-not-aligned                               : no 
+... -Werror=vla                                              : yes 
+... -Werror=implicit-fallthrough=2                           : no 
+... -Werror=tautological-compare                             : yes 
+... -Werror=sizeof-pointer-memaccess                         : yes 
+... -Werror=duplicated-cond                                  : no 
+... -Wmisleading-indentation                                 : yes 
+... -Werror=parentheses                                      : yes 
+... -Werror=use-after-free=3                                 : no 
+... -Werror=sizeof-array-div                                 : yes 
+... -Werror=cast-align=strict                                : no 
+... -Wunintialized                                           : no 
+... -Werror=write-strings                                    : yes 
+... -Werror=return-type                                      : yes 
+... -Werror=bool-compare                                     : no 
+... -Werror=sequence-point                                   : yes 
+... -Werror=packed                                           : yes 
+... -fdiagnostics-color=always                               : yes 
+-> processing test results                                   : 7 test failed 
+Checking for library m                                       : yes 
+Checking for header tgmath.h                                 : yes 
+Checking if tgmath.h is usable                               : yes 
+Checking if cmath is usable                                  : yes 
+-> processing mod options                                    : ... 
+* Barnacle tongue length fix                                 : OFF 
+* Client local weapons prediction                            : ON 
+* Crowbar idle animation                                     : OFF 
+* Crowbar attack delay fix                                   : OFF 
+* Rapid crowbar fix                                          : ON 
+* Gauss overcharge fix                                       : OFF 
+* Fix of tripmine beam duplication on level transition       : OFF 
+* Handgrenade deploy animation fix after finishing a throw   : OFF 
+* Animation times fix for some weapons                       : OFF 
+* Old pre-HL 25th satchel's behaviour                        : OFF 
+* Speakable cycler and func_button (breaks AMXModX offsets)  : ON 
+* Enable hud_allow_hd cvar by default (breaks HUD in some mods) : ON 
+* OEM Build                                                     : OFF 
+* Demo Build                                                    : OFF 
+* Gamedir path                                                  : valve 
+* Where to put server dll                                       : dlls 
+* Where to put client or menu dll                               : cl_dlls 
+* Default server dll name                                       : hl 
+Determining library postfix                                     : started 
+-> processing test results                                      : _ps4_amd64 
+--> game_shared                                                 : in progress 
+Checking for program 'git'                                      : /usr/bin/git 
+Git commit hash                                                 : 6c168fc-dirty 
+Git branch                                                      : ps4 
+<-- game_shared                                                 : done 
+--> dlls                                                        : in progress 
+<-- dlls                                                        : done 
+--> freevgui                                                    : in progress 
+Checking if 'clang++' supports C++11                            : yes 
+<-- freevgui                                                    : done 
+--> cl_dll                                                      : in progress 
+<-- cl_dll                                                      : done 
+'configure' finished successfully (1.683s)
