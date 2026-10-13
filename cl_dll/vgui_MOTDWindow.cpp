@@ -27,6 +27,7 @@
 #include "kbutton.h"
 #include "const.h"
 
+#include "build.h"
 #include "vgui_int.h"
 #include "vgui_TeamFortressViewport.h"
 
@@ -141,6 +142,10 @@ CMessageWindowPanel::CMessageWindowPanel( const char *szMOTD, const char *szTitl
 	CommandButton *pButton = new CommandButton( CHudTextMessage::BufferedLocaliseTextString( "#Menu_OK" ), iXPos + XRES( 16 ), iYPos + iYSize - YRES( 16 ) - BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y );
 	pButton->addActionSignal( new CMenuHandler_TextWindow( HIDE_TEXTWINDOW ) );
 	pButton->setParent( this );
+#if XASH_PS4
+	// no mouse, the only button is highlighted to show that Cross closes the window
+	pButton->setArmed( true );
+#endif
 }
 
 
