@@ -552,6 +552,24 @@ void CCzNPC::MonsterThink()
 	CTalkMonster::MonsterThink();
 	UpdateHeadWhileSpeaking();
 
+	// the short idle3..idle6 gestures throw the head up/down: keep calm idles only
+	if (m_Activity == ACT_IDLE && !m_pCine)
+	{
+		int calm = LookupSequence("idle1");
+		for (int i = 3; i <= 6 && calm >= 0; i++)
+		{
+			char nm[16];
+			sprintf(nm, "idle%d", i);
+			if (pev->sequence == LookupSequence(nm) && pev->sequence != calm)
+			{
+				pev->sequence = calm;
+				pev->frame = 0;
+				ResetSequenceInfo();
+				break;
+			}
+		}
+	}
+
 	// keep the map-defined idle pose (sitting, typing, ...) whenever nothing else drives the actor
 	if (m_idleSeq >= 0 && !m_pCine && !IsFollowing() && !IsMoving() && pev->sequence != m_idleSeq)
 	{
