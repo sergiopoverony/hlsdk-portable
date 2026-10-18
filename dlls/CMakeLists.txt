@@ -140,6 +140,7 @@ set (SVDLL_SOURCES
 	cz/cz_sequence.cpp
 	cz/trigger_sequence.cpp
 	cz/cz_triggers.cpp
+	cz/cz_npc.cpp
 	tripmine.cpp
 	turret.cpp
 	util.cpp
