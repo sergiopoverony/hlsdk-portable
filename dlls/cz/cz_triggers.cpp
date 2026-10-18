@@ -157,7 +157,7 @@ void CTriggerHud::TriggerHudUse(CBaseEntity *pActivator, CBaseEntity *pCaller, U
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CBasePlayer *pPlayer = UTIL_PlayerByIndex(i);
+		CBasePlayer *pPlayer = (CBasePlayer *)UTIL_PlayerByIndex(i);
 		if (!pPlayer)
 			continue;
 
@@ -224,7 +224,7 @@ void CTriggerFreezePlayer::FreezeUse(CBaseEntity *pActivator, CBaseEntity *pCall
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CBasePlayer *pPlayer = UTIL_PlayerByIndex(i);
+		CBasePlayer *pPlayer = (CBasePlayer *)UTIL_PlayerByIndex(i);
 		if (!pPlayer)
 			continue;
 
