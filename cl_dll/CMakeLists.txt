@@ -138,6 +138,7 @@ set (CLDLL_SOURCES
 	menu.cpp
 	message.cpp
 	cz_loc.cpp
+	cz_crosshair.cpp
 	message_strings.cpp
 	MOTD.cpp
 	nightvision.cpp

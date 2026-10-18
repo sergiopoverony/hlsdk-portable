@@ -1658,6 +1658,9 @@ void DLLEXPORT V_CalcRefdef( struct ref_params_s *pparams )
 	g_iWaterLevel = pparams->waterlevel;
 
 	gHUD.m_velocity = pparams->simvel;
+	extern int g_czOnGround, g_czDuck;
+	g_czOnGround = pparams->onground != -1;
+	g_czDuck = pparams->viewheight[2] < 22.0f;
 	gHUD.m_Meter.UpdateSpeed(pparams->simvel);
 
 	// intermission / finale rendering

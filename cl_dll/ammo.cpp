@@ -34,6 +34,11 @@
 
 #include "parsetext.h"
 
+extern void CZ_DrawCrosshair( float time, WEAPON *pw );
+static inline void CzSetCrosshair_( HSPRITE, wrect_t, int, int, int ) { wrect_t n = {0,}; SetCrosshair( 0, n, 0, 0, 0 ); }
+#define SetCrosshair CzSetCrosshair_
+
+
 WEAPON *gpActiveSel;	// NULL means off, 1 means just the menu bar, otherwise
 						// this points to the active weapon menu item
 WEAPON *gpLastSel;		// Last weapon menu selection 
@@ -961,6 +966,8 @@ void CHudAmmo::UserCmd_PrevWeapon()
 //-------------------------------------------------------------------------
 int CHudAmmo::Draw( float flTime )
 {
+	CZ_DrawCrosshair( flTime, m_pWeapon );
+
 	if( !gHUD.HasSuit() && !gHUD.DrawHUDNoSuit() )
 		return 1;
 
