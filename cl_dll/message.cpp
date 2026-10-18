@@ -407,6 +407,26 @@ int CHudMessage::Draw( float fTime )
 	return 1;
 }
 
+const char *Cz_Localize( const char *key );
+
+// titles.txt text of "#KEY" form is localized on the client (copy of the engine struct)
+static client_textmessage_t *Cz_LocalizeMessage( client_textmessage_t *m )
+{
+	static client_textmessage_t copies[16];
+	static char texts[16][512];
+	static int next = 0;
+
+	if( !m || !m->pMessage || m->pMessage[0] != '#' )
+		return m;
+
+	int idx = next++ & 15;
+	copies[idx] = *m;
+	strncpy( texts[idx], Cz_Localize( m->pMessage + 1 ), sizeof( texts[idx] ) - 1 );
+	texts[idx][sizeof( texts[idx] ) - 1] = 0;
+	copies[idx].pMessage = texts[idx];
+	return &copies[idx];
+}
+
 void CHudMessage::MessageAdd( const char *pName, float time )
 {
 	int i, j;
@@ -442,6 +462,8 @@ void CHudMessage::MessageAdd( const char *pName, float time )
 
 				tempMessage = &g_pCustomMessage;
 			}
+
+			tempMessage = Cz_LocalizeMessage( tempMessage );
 
 			for( j = 0; j < maxHUDMessages; j++ )
 			{

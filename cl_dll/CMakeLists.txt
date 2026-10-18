@@ -104,6 +104,7 @@ set (CLDLL_SOURCES
 	interpolation.cpp
 	menu.cpp
 	message.cpp
+	cz_loc.cpp
 	MOTD.cpp
 	parsemsg.cpp
 	../pm_shared/pm_debug.c

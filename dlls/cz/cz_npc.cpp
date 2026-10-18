@@ -401,7 +401,7 @@ void CCzNPC::Spawn()
 	pev->view_ofs = Vector(0, 0, 50);
 	m_flFieldOfView = VIEW_FIELD_WIDE;
 	m_MonsterState = MONSTERSTATE_NONE;
-	m_afCapability = bits_CAP_HEAR | bits_CAP_TURN_HEAD | bits_CAP_OPEN_DOORS | bits_CAP_AUTO_DOORS | bits_CAP_USE;
+	m_afCapability = bits_CAP_HEAR | bits_CAP_OPEN_DOORS | bits_CAP_AUTO_DOORS | bits_CAP_USE;
 
 	pev->spawnflags |= SF_MONSTER_GAG; // no idle chatter
 	pev->spawnflags &= ~SF_MONSTER_PRISONER;
@@ -507,8 +507,8 @@ void CCzNPC::StaticThink()
 	if (m_lookUntil > gpGlobals->time)
 		target = HeadYawToPlayer();
 	float d = target - m_headYaw;
-	if (d > 15) d = 15;
-	if (d < -15) d = -15;
+	if (d > 5) d = 5;
+	if (d < -5) d = -5;
 	m_headYaw += d;
 	SetBoneController(0, m_headYaw);
 }
@@ -534,8 +534,8 @@ void CCzNPC::UpdateHeadWhileSpeaking()
 	{
 		float target = (m_lookUntil > gpGlobals->time) ? HeadYawToPlayer() : 0;
 		float d = target - m_headYaw;
-		if (d > 15) d = 15;
-		if (d < -15) d = -15;
+		if (d > 5) d = 5;
+		if (d < -5) d = -5;
 		m_headYaw += d;
 		SetBoneController(0, m_headYaw);
 	}
