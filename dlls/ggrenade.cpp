@@ -23,6 +23,7 @@
 #include "cbase.h"
 #include "monsters.h"
 #include "weapons.h"
+#include "player.h"
 #include "soundent.h"
 #include "decals.h"
 #include "game.h"
@@ -36,6 +37,8 @@ LINK_ENTITY_TO_CLASS( grenade, CGrenade )
 TYPEDESCRIPTION	CGrenade::m_SaveData[] =
 {
 	DEFINE_FIELD(CGrenade, m_isTimed, FIELD_BOOLEAN),
+	DEFINE_FIELD(CGrenade, m_czKind, FIELD_INTEGER),
+	DEFINE_FIELD(CGrenade, m_czSmokeEnd, FIELD_TIME),
 };
 
 IMPLEMENT_SAVERESTORE(CGrenade, CBaseMonster)
@@ -77,6 +80,16 @@ void CGrenade::ExplodeDownwards()
 void CGrenade::Explode(const TraceResult *pTrace)
 {
 	// float flRndSound;// sound randomizer
+	if (m_czKind == CZ_FLASH)
+	{
+		CzFlashExplode();
+		return;
+	}
+	if (m_czKind == CZ_SMOKE)
+	{
+		CzSmokeExplode();
+		return;
+	}
 
 	pev->model = iStringNull;//invisible
 	pev->solid = SOLID_NOT;// intangible
@@ -374,6 +387,8 @@ void CGrenade::Spawn()
 void CGrenade::Precache()
 {
 	PrecacheBaseGrenadeSounds();
+	PRECACHE_SOUND("weapons/flashbang-1.wav");
+	PRECACHE_SOUND("weapons/sg_explode.wav");
 	RegisterAndPrecacheSoundScript(bounceSoundScript);
 
 	RegisterVisualAsMineOwn(handGrenadeVisual);
@@ -406,7 +421,8 @@ DamageInfo CGrenade::GetDefaultProjectileDirectDamageInfo()
 
 void CGrenade::SetProjectileParamsBeforeSpawn(const ProjectileParameters& params)
 {
-	m_isTimed = params.variant == TIMED;
+	m_czKind = params.variant;
+	m_isTimed = params.variant == TIMED || params.variant == CZ_FLASH || params.variant == CZ_SMOKE;
 	SetProjectileParamsBeforeSpawnImpl(params);
 }
 
@@ -639,4 +655,92 @@ void CGrenadeRound::GrenadeThink()
 	{
 		SetThink(&CGrenade::Detonate);
 	}
+}
+
+
+// ---- CZ:DS flashbang / smoke ----
+extern void Cz_GrenadeEvent(int kind, const Vector& origin, CBaseEntity* owner);
+
+void CGrenade::CzFlashExplode()
+{
+	pev->model = iStringNull;
+	pev->solid = SOLID_NOT;
+	pev->takedamage = DAMAGE_NO;
+	EMIT_SOUND(ENT(pev), CHAN_WEAPON, "weapons/flashbang-1.wav", 1.0f, ATTN_NORM);
+
+	MESSAGE_BEGIN(MSG_PVS, SVC_TEMPENTITY, pev->origin);
+		WRITE_BYTE(TE_DLIGHT);
+		WRITE_COORD(pev->origin.x);
+		WRITE_COORD(pev->origin.y);
+		WRITE_COORD(pev->origin.z);
+		WRITE_BYTE(40);
+		WRITE_BYTE(255);
+		WRITE_BYTE(255);
+		WRITE_BYTE(255);
+		WRITE_BYTE(3);
+		WRITE_BYTE(20);
+	MESSAGE_END();
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CBaseEntity* pEnt = UTIL_PlayerByIndex(i);
+		if (!pEnt || !pEnt->IsAlive())
+			continue;
+		CBasePlayer* pPlayer = (CBasePlayer*)pEnt;
+		Vector eye = pPlayer->EyePosition();
+		TraceResult tr;
+		UTIL_TraceLine(pev->origin, eye, ignore_monsters, ENT(pev), &tr);
+		if (tr.flFraction < 1.0f && tr.pHit != pPlayer->edict())
+			continue;
+		float dist = (eye - pev->origin).Length();
+		if (dist > 1500.0f)
+			continue;
+		// how much the flash is in sight
+		Vector toFlash = (pev->origin - eye).Normalize();
+		UTIL_MakeVectors(pPlayer->pev->v_angle);
+		float dot = DotProduct(gpGlobals->v_forward, toFlash);
+		float scale = dist > 200.0f ? 1.0f - (dist - 200.0f) / 1300.0f : 1.0f;
+		float hold = (dot > 0.0f ? 2.0f + 3.0f * dot : 1.0f) * scale;
+		float fade = hold + 2.0f;
+		UTIL_ScreenFade(pPlayer, Vector(255, 255, 255), fade, hold, 255, FFADE_IN);
+	}
+	Cz_GrenadeEvent(1, pev->origin, CBaseEntity::Instance(pev->owner));
+	UTIL_Remove(this);
+}
+
+void CGrenade::CzSmokeExplode()
+{
+	pev->model = iStringNull;
+	pev->solid = SOLID_NOT;
+	pev->takedamage = DAMAGE_NO;
+	pev->movetype = MOVETYPE_NONE;
+	pev->velocity = g_vecZero;
+	EMIT_SOUND(ENT(pev), CHAN_WEAPON, "weapons/sg_explode.wav", 1.0f, ATTN_NORM);
+	m_czSmokeEnd = gpGlobals->time + 18.0f;
+	Cz_GrenadeEvent(2, pev->origin, CBaseEntity::Instance(pev->owner));
+	SetThink(&CGrenade::CzSmokeThink);
+	pev->nextthink = gpGlobals->time;
+}
+
+void CGrenade::CzSmokeThink()
+{
+	if (gpGlobals->time >= m_czSmokeEnd)
+	{
+		UTIL_Remove(this);
+		return;
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		Vector p = pev->origin + Vector(RANDOM_FLOAT(-60, 60), RANDOM_FLOAT(-60, 60), RANDOM_FLOAT(0, 50));
+		MESSAGE_BEGIN(MSG_PVS, SVC_TEMPENTITY, p);
+			WRITE_BYTE(TE_SMOKE);
+			WRITE_COORD(p.x);
+			WRITE_COORD(p.y);
+			WRITE_COORD(p.z);
+			WRITE_SHORT(g_sModelIndexSmoke);
+			WRITE_BYTE(60);
+			WRITE_BYTE(6);
+		MESSAGE_END();
+	}
+	pev->nextthink = gpGlobals->time + 0.5f;
 }

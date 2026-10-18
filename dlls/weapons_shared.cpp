@@ -723,6 +723,16 @@ const char* GetRealProjectileClassname(const char* projectileName, int& variant)
 		variant = CGrenade::TIMED;
 		return "grenade";
 	}
+	else if (FStrEq(projectileName, "cz flashbang"))
+	{
+		variant = CGrenade::CZ_FLASH;
+		return "grenade";
+	}
+	else if (FStrEq(projectileName, "cz smoke"))
+	{
+		variant = CGrenade::CZ_SMOKE;
+		return "grenade";
+	}
 	else if (FStrEq(projectileName, "spore rocket"))
 	{
 		variant = CSpore::ROCKET;

@@ -264,3 +264,9 @@ void CCzSoldier::AnimThink()
 	StudioFrameAdvance();
 	pev->nextthink = gpGlobals->time + 0.1f;
 }
+
+// Reaction of soldiers to grenades (kind: 1 flash, 2 smoke) - animations/speech added later
+void Cz_GrenadeEvent(int kind, const Vector& origin, CBaseEntity* owner)
+{
+	(void)kind; (void)origin; (void)owner;
+}

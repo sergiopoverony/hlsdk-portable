@@ -12,7 +12,9 @@ public:
 	enum GrenadeType
 	{
 		CONTACT,
-		TIMED
+		TIMED,
+		CZ_FLASH,
+		CZ_SMOKE
 	};
 
 	void Spawn() override;
@@ -56,6 +58,11 @@ public:
 
 	bool m_fRegisteredSound;// whether or not this grenade has issued its DANGER sound to the world sound list yet.
 	bool m_isTimed;
+	int m_czKind;
+	void CzFlashExplode();
+	void CzSmokeExplode();
+	void EXPORT CzSmokeThink();
+	float m_czSmokeEnd;
 
 	int Save(CSave& save) override;
 	int Restore(CRestore& restore) override;

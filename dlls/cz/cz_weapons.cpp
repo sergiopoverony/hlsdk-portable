@@ -415,3 +415,62 @@ WeaponParameters CCzAwp::GetDefaultParameters() const
 	params.dropAmmo.classname = "ammo_338magnum";
 	return std::move(params);
 }
+
+// ---------------------------------------------------------------------------
+// Grenades: he / flashbang / smoke  (CS anims: 0 idle, 1 pullpin, 2 throw, 3 deploy)
+// ---------------------------------------------------------------------------
+static WeaponParameters CzGrenadeParams(const char* ammo, int maxCarry, const char* w, const char* v, const char* p, const char* projectile)
+{
+	WeaponParameters params;
+	params.initialAmmoAmount = 1;
+	params.maxClip = WEAPON_NOCLIP;
+	params.ammoName = ammo;
+	params.worldModel = w;
+	params.viewModel = v;
+	params.playerModel = p;
+	params.playerAnimExt = "grenade";
+	params.priority = 5;
+	params.mirrorViewModel = true;
+
+	params.deploy.animIndex = 3;
+	params.idleAnims.main = WeaponParameters::IdleAnimArray{WeaponParameters::IdleAnim{0, 1.0f, FloatRange(10.0f, 15.0f)}};
+
+	params.fire.fireType = WeaponParameters::Fire::PROJECTILE;
+	params.fire.anims = {2};
+	params.fire.cycleTime = 0.5f;
+	params.fire.idleDelay = 0.5f;
+	params.fire.chargeAnims = {1};
+	params.fire.chargeTime = 1.0f;
+	params.fire.allowHolsterDuringCharge = false;
+	params.fire.chargeEachFire = true;
+	params.fire.cooldownAnims = {3};
+	params.fire.cooldownTime = 0.5f;
+	params.fire.projectileName = projectile;
+	params.fire.projectileOffsetForward = 16.0f;
+	params.fire.projectileAddCurrentVelocity = WeaponParameters::Fire::ADD_VELOCITY_ABSOLUTE;
+	params.fire.projectileRespectPunchangle = true;
+	params.fire.projectileDetonationTime = 1.5f;
+	params.fire.projectileDetonationCooked = false;
+	params.fire.projectileGrenadePhysics = WeaponParameters::Fire::GRENADEPHYS_AUTO;
+	params.dropAmmo.classname = "";
+	params.exhausitble = true;
+	(void)maxCarry;
+	return params;
+}
+
+#define CZ_GRENADE_CLASS(CLS, WID, SLOTPOS, NAME, AMMO, MAXC, MDL, PROJ) \
+class CLS : public CConfigurableWeapon \
+{ \
+public: \
+	int WeaponId() const override { return WID; } \
+	bool GetItemInfo(ItemInfo *p) override { p->iSlot = 3; p->iPosition = SLOTPOS; return true; } \
+	WeaponParameters GetDefaultParameters() const override \
+	{ \
+		return CzGrenadeParams(AMMO, MAXC, "models/w_" MDL ".mdl", "models/v_" MDL ".mdl", "models/p_" MDL ".mdl", PROJ); \
+	} \
+}; \
+LINK_WEAPON_TO_CLASS(NAME, CLS)
+
+CZ_GRENADE_CLASS(CCzHeGrenade, WEAPON_HEGRENADE, 0, weapon_hegrenade, "HEGrenade", 1, "hegrenade", "hand grenade")
+CZ_GRENADE_CLASS(CCzFlashbang, WEAPON_FLASHBANG, 1, weapon_flashbang, "Flashbang", 2, "flashbang", "cz flashbang")
+CZ_GRENADE_CLASS(CCzSmokeGrenade, WEAPON_SMOKEGRENADE, 2, weapon_smokegrenade, "SmokeGrenade", 1, "smokegrenade", "cz smoke")
