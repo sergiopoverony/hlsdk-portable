@@ -71,10 +71,31 @@ static void Loc_Load()
 		int length = 0;
 		byte *data = LOAD_FILE_FOR_ME((char *)path, &length);
 		if (!data)
+		{
+			ALERT(at_console, "trigger_sequence: can't open %s\n", path);
 			continue;
+		}
 
+		// Steam resource files may be UTF-16LE with BOM: convert to UTF-8
+		std::string conv;
 		const char *p = (const char *)data;
 		const char *end = p + length;
+		bool utf16 = length >= 2 && data[0] == 0xFF && data[1] == 0xFE;
+		ALERT(at_console, "trigger_sequence: loc file %s: %d bytes%s\n", path, length, utf16 ? " (UTF-16)" : "");
+		if (utf16)
+		{
+			for (int k = 2; k + 1 < length; k += 2)
+			{
+				unsigned c = data[k] | (data[k + 1] << 8);
+				if (c < 0x80) conv += (char)c;
+				else if (c < 0x800) { conv += (char)(0xC0 | (c >> 6)); conv += (char)(0x80 | (c & 0x3F)); }
+				else { conv += (char)(0xE0 | (c >> 12)); conv += (char)(0x80 | ((c >> 6) & 0x3F)); conv += (char)(0x80 | (c & 0x3F)); }
+			}
+			p = conv.c_str();
+			end = p + conv.size();
+		}
+		else if (length >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF)
+			p += 3;
 		std::vector<std::string> tokens;
 
 		// tokenizer: "quoted strings" (may span lines), { }, // comments
