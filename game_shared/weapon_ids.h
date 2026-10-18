@@ -36,6 +36,15 @@
 #define WEAPON_NAILGUN			29
 #define WEAPON_GRENADE_LAUNCHER	30
 
+// CZDS (Counter-Strike style) weapons
+#define WEAPON_USP				32
+#define WEAPON_M4A1				33
+#define WEAPON_AWP				34
+#define WEAPON_AUG				35
+#define WEAPON_HEGRENADE		36
+#define WEAPON_FLASHBANG		37
+#define WEAPON_SMOKEGRENADE		38
+
 #define WEAPON_MELEE			48
 
 #define WEAPON_PISTOL			50

@@ -527,3 +527,19 @@ class CSlugsAmmo : public CBasePlayerAmmo
 };
 
 LINK_ENTITY_TO_CLASS( ammo_slugs, CSlugsAmmo )
+
+class CCz556NatoAmmo : public CBasePlayerAmmo
+{
+	const char* DefaultModel() override { return "models/w_9mmARclip.mdl"; }
+	int DefaultAmount() override { return 30; }
+	const char* AmmoName() override { return "556nato"; }
+};
+LINK_ENTITY_TO_CLASS( ammo_556nato, CCz556NatoAmmo )
+
+class CCz338MagnumAmmo : public CBasePlayerAmmo
+{
+	const char* DefaultModel() override { return "models/w_9mmARclip.mdl"; }
+	int DefaultAmount() override { return 10; }
+	const char* AmmoName() override { return "338magnum"; }
+};
+LINK_ENTITY_TO_CLASS( ammo_338magnum, CCz338MagnumAmmo )

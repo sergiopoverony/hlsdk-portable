@@ -692,6 +692,18 @@ protected:
 
 LINK_ENTITY_TO_CLASS( item_armorvest, CItemArmorVest )
 
+// CZ: kevlar vest
+class CItemCzArmor : public CItemBattery
+{
+public:
+	const char* DefaultModel() override { return "models/w_kevlar.mdl"; }
+protected:
+	bool ShouldSetSuitUpdate() override { return false; }
+	int DefaultCapacity() override { return 100; }
+};
+
+LINK_ENTITY_TO_CLASS( item_armor, CItemCzArmor )
+
 class CItemHelmet : public CItemBattery
 {
 public:

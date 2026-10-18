@@ -733,6 +733,9 @@ void CHalfLifeMultiplay::PlayerSpawn( CBasePlayer *pPlayer )
 
 		while( ( pWeaponEntity = UTIL_FindEntityByClassname( pWeaponEntity, "game_player_equip" ) ) )
 		{
+			// CZ maps: named game_player_equip are fired by triggers only
+			if (pWeaponEntity->pev->targetname && strncmp(STRING(gpGlobals->mapname), "cz_", 3) == 0)
+				continue;
 			pWeaponEntity->Touch( pPlayer );
 			addDefault = false;
 		}

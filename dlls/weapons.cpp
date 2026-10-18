@@ -309,7 +309,9 @@ void RegisterAmmoTypes()
 	g_AmmoRegistry.Register("762", _762_MAX_CARRY);
 	g_AmmoRegistry.Register("Shocks", SHOCK_MAX_CARRY);
 	g_AmmoRegistry.Register("spores", SPORE_MAX_CARRY);
-	g_AmmoRegistry.Register("45acp", 200);
+	g_AmmoRegistry.Register("45acp", 100);
+	g_AmmoRegistry.Register("556nato", 90);
+	g_AmmoRegistry.Register("338magnum", 30);
 	g_AmmoRegistry.Register("57mm", 200);
 	g_AmmoRegistry.Register("nails", 200);
 	g_AmmoRegistry.Register("grenades", 50);
@@ -346,6 +348,7 @@ void W_Precache( CBaseEntity* pWorld )
 	UTIL_PrecacheOther( "item_suit" );
 	UTIL_PrecacheOther( "item_healthkit" );
 	UTIL_PrecacheOther( "item_battery" );
+	UTIL_PrecacheOther( "item_armor" );
 	UTIL_PrecacheOther( "item_antidote" );
 	UTIL_PrecacheOther( "item_security" );
 	UTIL_PrecacheOther( "item_longjump" );
@@ -372,6 +375,8 @@ void W_Precache( CBaseEntity* pWorld )
 		AmmoEnabled("556", "ammo_556"),
 		AmmoEnabled("762", "ammo_762"),
 		AmmoEnabled("45acp", "ammo_45acp"),
+		AmmoEnabled("556nato", "ammo_556nato"),
+		AmmoEnabled("338magnum", "ammo_338magnum"),
 		AmmoEnabled("57mm", "ammo_57mm"),
 		AmmoEnabled("nails", "ammo_nails"),
 		AmmoEnabled("grenades", "ammo_grenadeclip"),

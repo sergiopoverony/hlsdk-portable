@@ -211,6 +211,7 @@ set (SVDLL_SOURCES
 	weapons_shared.cpp
 	weapon_carry_categories.cpp
 	weapon_tools.cpp
+	cz/cz_weapons.cpp
 	world.cpp
 	xen.cpp
 	zombie.cpp
