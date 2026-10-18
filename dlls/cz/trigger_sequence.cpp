@@ -441,6 +441,23 @@ const char *Cz_PickSentence(const char *group)
 	return s_picked.c_str();
 }
 
+// runtime precache does not work: NPC voice groups must be precached at map load
+void Cz_PrecacheGroup(const char *group)
+{
+	Seq_EnsureMapLoaded();
+	const std::vector<std::string> *g = g_seqLib.GetGroup(group);
+	if (!g)
+	{
+		ALERT(at_aiconsole, "Cz_PrecacheGroup: no group %s\n", group);
+		return;
+	}
+	for (size_t i = 0; i < g->size(); i++)
+	{
+		std::string path = (*g)[i] + ".wav";
+		PRECACHE_SOUND((char *)path.c_str());
+	}
+}
+
 void Cz_NpcSpeak(CBaseEntity *pSpeaker, float seconds); // cz_npc.cpp
 
 void CTriggerSequence::ExecuteSound(const czseq::Command &cmd)

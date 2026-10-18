@@ -273,6 +273,13 @@ int CCineMonster::FindEntity( void )
 		if( FBitSet( VARS( pentTarget )->flags, FL_MONSTER ) )
 		{
 			pTarget = GetMonsterPointer( pentTarget );
+			// CZ: an autonomous sequence with a radius only starts once the named monster is within that radius
+			if( pTarget && m_flRadius > 0 && FStringNull( pev->targetname ) && ( pTarget->pev->origin - pev->origin ).Length() > m_flRadius )
+			{
+				pentTarget = FIND_ENTITY_BY_TARGETNAME( pentTarget, STRING( m_iszEntity ) );
+				pTarget = NULL;
+				continue;
+			}
 			if( pTarget && pTarget->CanPlaySequence( FCanOverrideState(), SS_INTERRUPT_BY_NAME ) )
 			{
 				m_hTargetEnt = pTarget;

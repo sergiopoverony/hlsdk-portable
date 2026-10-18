@@ -379,6 +379,12 @@ void CCzNPC::Precache()
 
 	TalkInit();
 	CTalkMonster::Precache();
+
+	extern void Cz_PrecacheGroup(const char *group);
+	Cz_PrecacheGroup("NPC_OK_AM");
+	Cz_PrecacheGroup("NPC_WAIT_AM");
+	Cz_PrecacheGroup("H_HELP_AM");
+	Cz_PrecacheGroup("H_THANK_AM");
 }
 
 void CCzNPC::Spawn()
@@ -662,7 +668,7 @@ void CCzHostage::HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_T
 
 	if (IsFollowing())
 	{
-		StopFollowing(FALSE);
+		StopFollowing(TRUE);
 		Cz_Say(this, "NPC_WAIT_AM");
 	}
 	else
@@ -681,7 +687,7 @@ void CCzHostage::HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_T
 void CCzHostage::Rescue(CBaseEntity *pActivator)
 {
 	m_rescued = 1;
-	StopFollowing(FALSE);
+	StopFollowing(TRUE);
 	SetUse(NULL);
 	m_idleSeq = -1;
 	Cz_Say(this, "H_THANK_AM");
