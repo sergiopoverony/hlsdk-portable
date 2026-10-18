@@ -125,7 +125,7 @@ static void Loc_Load()
 		}
 	}
 
-	ALERT(at_aiconsole, "trigger_sequence: %d localized strings\n", (int)g_locTable.size());
+	ALERT(at_console, "trigger_sequence: %d localized strings\n", (int)g_locTable.size());
 }
 
 static const char *Seq_Localize(const char *text)
@@ -382,6 +382,7 @@ void CTriggerSequence::ExecuteCommand(const czseq::Command &cmd)
 void CTriggerSequence::ExecuteText(const czseq::Command &cmd)
 {
 	const char *msg = Seq_Localize(cmd.value.c_str());
+	ALERT(at_console, "trigger_sequence: text \"%s\" -> \"%.40s\"\n", cmd.value.c_str(), msg ? msg : "(null)");
 	if (!msg || !msg[0])
 		return;
 
