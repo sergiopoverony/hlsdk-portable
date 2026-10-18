@@ -69,9 +69,22 @@ jobs:
     - name: Build on Windows
       if: startsWith(matrix.os, 'windows')
       run: |
-        cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -B build -S . -DCMAKE_INSTALL_PREFIX="dist"
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -B build -S . -DCMAKE_INSTALL_PREFIX="dist"
         cmake --build build --target all
         cmake --build build --target install
+
+    - name: Collect pdb (CZDS)
+      if: startsWith(matrix.os, 'windows')
+      shell: bash
+      run: |
+        gd=$(grep build/CMakeCache.txt -Ee 'GAMEDIR:STRING=[a-z0-9]+' | cut -d '=' -f 2)
+        for f in $(find build -name "mp.pdb" -o -name "client.pdb"); do
+          case "$f" in
+            *mp.pdb) cp "$f" "dist/$gd/dlls/" ;;
+            *client.pdb) cp "$f" "dist/$gd/cl_dlls/" ;;
+          esac
+        done
+        find dist -name "*.pdb"
 
     - name: Set developer command prompt for Windows x86_64
       if: false  # CZDS: x86 only for fast iterations

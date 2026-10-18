@@ -2383,7 +2383,7 @@ int CGraph::FLoadGraph( const char *szMapName )
 	strcat( szDirName, "/graphs" );
 	CreateDirectoryA( szDirName, NULL );
 
-	strcpy( szFilename, "maps/graphs/" );
+	strcpy( szFilename, "maps/graphs/czds_" );
 	strcat( szFilename, szMapName );
 	strcat( szFilename, ".nod" );
 
@@ -2605,7 +2605,7 @@ int CGraph::FSaveGraph( const char *szMapName )
 	strcat( szFilename, "/graphs" );
 	CreateDirectoryA( szFilename, NULL );
 
-	strcat( szFilename, "/" );
+	strcat( szFilename, "/czds_" );
 	strcat( szFilename, szMapName );
 	strcat( szFilename, ".nod" );
 
@@ -2745,7 +2745,7 @@ int CGraph::CheckNODFile( const char *szMapName )
 	strcat( szBspFilename, szMapName );
 	strcat( szBspFilename, ".bsp" );
 
-	strcpy( szGraphFilename, "maps/graphs/" );
+	strcpy( szGraphFilename, "maps/graphs/czds_" );
 	strcat( szGraphFilename, szMapName );
 	strcat( szGraphFilename, ".nod" );
 

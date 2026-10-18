@@ -34,6 +34,9 @@ static bool Cz_IsNullName(const char *s)
 	if (!s || !s[0])
 		return true;
 
+	if (strstr(s, "null") || strstr(s, "bogus"))
+		return true;
+
 	return !_stricmp_cz(s, "none") || !_stricmp_cz(s, "null") || !_stricmp_cz(s, "_is_null") ||
 		!_stricmp_cz(s, "nullnullnull") || !_stricmp_cz(s, "null_null_null_null");
 }
@@ -229,6 +232,7 @@ public:
 
 	void SetActivity(Activity newActivity);
 	Schedule_t *GetSchedule();
+	void MonsterThink();
 	void EXPORT NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
 
 	void ApplyHeadSkin();
@@ -241,6 +245,7 @@ public:
 	int m_head;
 	int m_idleSeq;
 	int m_spawned;
+	int m_cantMove;
 };
 
 TYPEDESCRIPTION CCzNPC::m_SaveData[] =
@@ -250,6 +255,7 @@ TYPEDESCRIPTION CCzNPC::m_SaveData[] =
 	DEFINE_FIELD(CCzNPC, m_head, FIELD_INTEGER),
 	DEFINE_FIELD(CCzNPC, m_idleSeq, FIELD_INTEGER),
 	DEFINE_FIELD(CCzNPC, m_spawned, FIELD_INTEGER),
+	DEFINE_FIELD(CCzNPC, m_cantMove, FIELD_INTEGER),
 };
 
 LINK_ENTITY_TO_CLASS(monster_npc, CCzNPC)
@@ -276,7 +282,12 @@ void CCzNPC::KeyValue(KeyValueData *pkvd)
 		m_head = atoi(pkvd->szValue);
 		pkvd->fHandled = TRUE;
 	}
-	else if (FStrEq(pkvd->szKeyName, "cantmove") || FStrEq(pkvd->szKeyName, "TriggerCondition") ||
+	else if (FStrEq(pkvd->szKeyName, "cantmove"))
+	{
+		m_cantMove = atoi(pkvd->szValue);
+		pkvd->fHandled = TRUE;
+	}
+	else if (FStrEq(pkvd->szKeyName, "TriggerCondition") ||
 		FStrEq(pkvd->szKeyName, "TriggerTarget"))
 	{
 		pkvd->fHandled = TRUE;
@@ -394,6 +405,21 @@ Schedule_t *CCzNPC::GetSchedule()
 	return CBaseMonster::GetSchedule();
 }
 
+void CCzNPC::MonsterThink()
+{
+	CTalkMonster::MonsterThink();
+
+	// keep the map-defined idle pose (sitting, typing, ...) whenever nothing else drives the actor
+	if (m_idleSeq >= 0 && !m_pCine && !IsFollowing() && !IsMoving() && pev->sequence != m_idleSeq)
+	{
+		pev->sequence = m_idleSeq;
+		pev->frame = 0;
+		ResetSequenceInfo();
+		m_Activity = ACT_IDLE;
+		m_IdealActivity = ACT_IDLE;
+	}
+}
+
 void CCzNPC::NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value)
 {
 	// a map-defined use target wins
@@ -403,6 +429,100 @@ void CCzNPC::NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useT
 		return;
 	}
 
+	// seated/working actors never follow the player
+	if (m_cantMove || m_idleSeq >= 0)
+		return;
+
 	// no use target: the actor follows the player (door-opener hostage)
 	FollowerUse(pActivator, pCaller, useType, value);
+}
+
+// ---------------------------------------------------------------------------
+// info_hostage_rescue: marks the rescue zone (radius 256)
+// ---------------------------------------------------------------------------
+LINK_ENTITY_TO_CLASS(info_hostage_rescue, CPointEntity)
+
+// ---------------------------------------------------------------------------
+// monster_hostage: a civilian that follows the player and is "rescued" in a rescue zone
+// ---------------------------------------------------------------------------
+class CCzHostage: public CCzNPC
+{
+public:
+	void Spawn();
+	void KeyValue(KeyValueData *pkvd);
+	int Save(CSave &save);
+	int Restore(CRestore &restore);
+	void MonsterThink();
+	void EXPORT HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
+	void Rescue(CBaseEntity *pActivator);
+
+	static TYPEDESCRIPTION m_SaveData[];
+
+	string_t m_rescueTarget;
+	int m_rescued;
+};
+
+TYPEDESCRIPTION CCzHostage::m_SaveData[] =
+{
+	DEFINE_FIELD(CCzHostage, m_rescueTarget, FIELD_STRING),
+	DEFINE_FIELD(CCzHostage, m_rescued, FIELD_INTEGER),
+};
+
+LINK_ENTITY_TO_CLASS(monster_hostage, CCzHostage)
+IMPLEMENT_SAVERESTORE(CCzHostage, CCzNPC)
+
+void CCzHostage::KeyValue(KeyValueData *pkvd)
+{
+	if (FStrEq(pkvd->szKeyName, "rescuetarget"))
+	{
+		m_rescueTarget = ALLOC_STRING(pkvd->szValue);
+		pkvd->fHandled = TRUE;
+	}
+	else if (FStrEq(pkvd->szKeyName, "noautoremove") || FStrEq(pkvd->szKeyName, "classtype"))
+		pkvd->fHandled = TRUE;
+	else
+		CCzNPC::KeyValue(pkvd);
+}
+
+void CCzHostage::Spawn()
+{
+	CCzNPC::Spawn();
+	SetUse(&CCzHostage::HostageUse);
+}
+
+void CCzHostage::HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value)
+{
+	if (m_rescued)
+		return;
+
+	FollowerUse(pActivator, pCaller, useType, value);
+}
+
+void CCzHostage::Rescue(CBaseEntity *pActivator)
+{
+	m_rescued = 1;
+	StopFollowing(FALSE);
+	SetUse(NULL);
+	m_idleSeq = -1;
+
+	if (!FStringNull(m_rescueTarget))
+		FireTargets(STRING(m_rescueTarget), pActivator, this, USE_TOGGLE, 0);
+}
+
+void CCzHostage::MonsterThink()
+{
+	CCzNPC::MonsterThink();
+
+	if (m_rescued || !IsFollowing())
+		return;
+
+	CBaseEntity *pZone = NULL;
+	while ((pZone = UTIL_FindEntityByClassname(pZone, "info_hostage_rescue")) != NULL)
+	{
+		if ((pZone->pev->origin - pev->origin).Length() < 256.0f)
+		{
+			Rescue(UTIL_PlayerByIndex(1));
+			break;
+		}
+	}
 }
