@@ -98,6 +98,11 @@ set (SVDLL_SOURCES
 	geneworm.cpp
 	ggrenade.cpp
 	globals.cpp
+	cz/cz_sequence.cpp
+	cz/trigger_sequence.cpp
+	cz/cz_triggers.cpp
+	cz/cz_npc.cpp
+	cz/cz_soldier.cpp
 	glock.cpp
 	gman.cpp
 	gonome.cpp

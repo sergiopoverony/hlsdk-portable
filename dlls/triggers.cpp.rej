@@ -1,0 +1,125 @@
+--- dlls/triggers.cpp
++++ dlls/triggers.cpp
+@@ -636,14 +636,43 @@ class CTriggerCDAudio : public CBaseTrigger
+ {
+ public:
+ 	void Spawn( void );
++	void KeyValue( KeyValueData *pkvd );
++	int Save( CSave &save );
++	int Restore( CRestore &restore );
++	static TYPEDESCRIPTION m_SaveData[];
+ 
+ 	virtual void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+ 	void PlayTrack( void );
+ 	void Touch( CBaseEntity *pOther );
++	void EXPORT DoorWatchThink( void );
++
++	string_t m_trackName; // CZ: mp3 path ("trackname")
++	int m_playing;
++	EHANDLE m_hDoor;
+ };
+ 
+ LINK_ENTITY_TO_CLASS( trigger_cdaudio, CTriggerCDAudio )
+ 
++TYPEDESCRIPTION CTriggerCDAudio::m_SaveData[] =
++{
++	DEFINE_FIELD( CTriggerCDAudio, m_trackName, FIELD_STRING ),
++	DEFINE_FIELD( CTriggerCDAudio, m_playing, FIELD_INTEGER ),
++	DEFINE_FIELD( CTriggerCDAudio, m_hDoor, FIELD_EHANDLE ),
++};
++
++IMPLEMENT_SAVERESTORE( CTriggerCDAudio, CBaseTrigger )
++
++void CTriggerCDAudio::KeyValue( KeyValueData *pkvd )
++{
++	if( FStrEq( pkvd->szKeyName, "trackname" ) )
++	{
++		m_trackName = ALLOC_STRING( pkvd->szValue );
++		pkvd->fHandled = TRUE;
++	}
++	else
++		CBaseTrigger::KeyValue( pkvd );
++}
++
+ //
+ // Changes tracks or stops CD when player touches
+ //
+@@ -707,10 +743,75 @@ void PlayCDTrack( int iTrack )
+ // only plays for ONE client, so only use in single play!
+ void CTriggerCDAudio::PlayTrack( void )
+ {
+-	PlayCDTrack( (int)pev->health );
++	if( FStringNull( m_trackName ) )
++	{
++		PlayCDTrack( (int)pev->health );
+ 
+-	SetTouch( NULL );
+-	UTIL_Remove( this );
++		SetTouch( NULL );
++		UTIL_Remove( this );
++		return;
++	}
++
++	CBaseEntity *pClient = UTIL_PlayerByIndex( 1 );
++	if( !pClient )
++		return;
++
++	// door-linked track (hostage_door): the second activation stops the music
++	if( m_playing && m_hDoor )
++	{
++		CLIENT_COMMAND( pClient->edict(), "mp3 stop\n" );
++		m_playing = 0;
++		SetThink( NULL );
++		return;
++	}
++
++	char cmd[256];
++	const char *track = STRING( m_trackName );
++	const char *ext = strrchr( track, '.' );
++	snprintf( cmd, sizeof( cmd ), "mp3 play %s%s\n", track, ( ext && strlen( ext ) <= 4 ) ? "" : ".mp3" );
++	CLIENT_COMMAND( pClient->edict(), cmd );
++	m_playing = 1;
++	ALERT( at_aiconsole, "trigger_cdaudio '%s': %s", STRING( pev->targetname ), cmd );
++
++	// a door with the same name (hostage_door): the music ends when the player walks through it
++	m_hDoor = NULL;
++	if( !FStringNull( pev->targetname ) )
++	{
++		CBaseEntity *pDoor = NULL;
++		while( ( pDoor = UTIL_FindEntityByTargetname( pDoor, STRING( pev->targetname ) ) ) != NULL )
++		{
++			if( pDoor != this && FClassnameIs( pDoor->pev, "func_door" ) )
++			{
++				m_hDoor = pDoor;
++				SetThink( &CTriggerCDAudio::DoorWatchThink );
++				pev->nextthink = gpGlobals->time + 0.2f;
++				break;
++			}
++		}
++	}
++}
++
++void CTriggerCDAudio::DoorWatchThink( void )
++{
++	CBaseEntity *pDoor = m_hDoor;
++	CBaseEntity *pPlayer = UTIL_PlayerByIndex( 1 );
++	if( !pDoor || !pPlayer || !m_playing )
++	{
++		SetThink( NULL );
++		return;
++	}
++
++	Vector mins = pDoor->pev->absmin - Vector( 48, 48, 48 );
++	Vector maxs = pDoor->pev->absmax + Vector( 48, 48, 48 );
++	Vector o = pPlayer->pev->origin;
++	if( o.x > mins.x && o.x < maxs.x && o.y > mins.y && o.y < maxs.y && o.z > mins.z && o.z < maxs.z )
++	{
++		CLIENT_COMMAND( pPlayer->edict(), "mp3 stop\n" );
++		m_playing = 0;
++		SetThink( NULL );
++		return;
++	}
++	pev->nextthink = gpGlobals->time + 0.2f;
+ }
+ 
+ // This plays a CD track when fired or when the player enters it's radius

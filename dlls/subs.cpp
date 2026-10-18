@@ -405,6 +405,13 @@ void CBaseToggle::KeyValue( KeyValueData *pkvd )
 		m_sMaster = ALLOC_STRING( pkvd->szValue );
 		pkvd->fHandled = true;
 	}
+	else if( FStrEq( pkvd->szKeyName, "globalstate" ) ) // CZ: works only while this global state is ON
+	{
+		char tmp[128];
+		snprintf( tmp, sizeof( tmp ), "\x01%s", pkvd->szValue ); // \x01 prefix marks a global state name
+		m_sMaster = ALLOC_STRING( tmp );
+		pkvd->fHandled = true;
+	}
 	else if( FStrEq( pkvd->szKeyName, "distance" ) )
 	{
 		m_flMoveDistance = atof( pkvd->szValue );

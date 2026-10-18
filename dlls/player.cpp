@@ -3998,8 +3998,12 @@ void CBasePlayer::UpdatePlayerSound()
 	//ALERT( at_console, "%d/%d\n", iVolume, m_iTargetVolume );
 }
 
+extern void Cz_PlayerThink( CBasePlayer *pPlayer );
+extern void Cz_PlayerSpawn( CBasePlayer *pPlayer );
+
 void CBasePlayer::PostThink()
 {
+	Cz_PlayerThink( this );
 	if( g_fGameOver )
 		goto pt_end;	// intermission or finale
 
@@ -4342,6 +4346,7 @@ ReturnSpot:
 
 void CBasePlayer::Spawn()
 {
+	Cz_PlayerSpawn( this );
 	m_flStartCharge = gpGlobals->time;
 	pev->classname = MAKE_STRING( "player" );
 	pev->armorvalue = 0;

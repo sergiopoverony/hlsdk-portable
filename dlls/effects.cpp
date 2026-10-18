@@ -1185,6 +1185,8 @@ public:
 
 	float m_lastTime;
 	float m_maxFrame;
+	int m_czScaled;
+	int m_czCheck;
 };
 
 LINK_ENTITY_TO_CLASS( env_glow, CGlow )
@@ -1193,6 +1195,8 @@ TYPEDESCRIPTION	CGlow::m_SaveData[] =
 {
 	DEFINE_FIELD( CGlow, m_lastTime, FIELD_TIME ),
 	DEFINE_FIELD( CGlow, m_maxFrame, FIELD_FLOAT ),
+	DEFINE_FIELD( CGlow, m_czScaled, FIELD_INTEGER ),
+	DEFINE_FIELD( CGlow, m_czCheck, FIELD_INTEGER ),
 };
 
 IMPLEMENT_SAVERESTORE( CGlow, CPointEntity )
@@ -1212,10 +1216,26 @@ void CGlow::Spawn()
 		pev->nextthink	= gpGlobals->time + 0.1f;
 
 	m_lastTime = gpGlobals->time;
+
+	// CZ:DS: glows are dimmer in the original; deferred so info_player_start exists
+	if( !m_czScaled )
+	{
+		pev->scale *= 0.35f;
+		m_czScaled = 1;
+		m_czCheck = 1;
+		pev->nextthink = gpGlobals->time + 0.2f;
+	}
 }
 
 void CGlow::Think()
 {
+	if( m_czCheck )
+	{
+		m_czCheck = 0;
+		CBaseEntity *pStart = UTIL_FindEntityByClassname( NULL, "info_player_start" );
+		if( pStart && ( pStart->pev->origin - pev->origin ).Length() < 700.0f )
+			pev->scale *= 0.17f / 0.35f;
+	}
 	Animate( pev->framerate * ( gpGlobals->time - m_lastTime ) );
 
 	pev->nextthink = gpGlobals->time + 0.1f;

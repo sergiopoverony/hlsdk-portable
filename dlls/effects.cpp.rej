@@ -1,0 +1,29 @@
+--- dlls/effects.cpp
++++ dlls/effects.cpp
+@@ -1112,10 +1116,26 @@ void CGlow::Spawn( void )
+ 		pev->nextthink	= gpGlobals->time + 0.1f;
+ 
+ 	m_lastTime = gpGlobals->time;
++
++	// CZ:DS: glows are dimmer in the original; deferred so info_player_start exists
++	if( !m_czScaled )
++	{
++		pev->scale *= 0.35f;
++		m_czScaled = 1;
++		m_czCheck = 1;
++		pev->nextthink = gpGlobals->time + 0.2f;
++	}
+ }
+ 
+ void CGlow::Think( void )
+ {
++	if( m_czCheck )
++	{
++		m_czCheck = 0;
++		CBaseEntity *pStart = UTIL_FindEntityByClassname( NULL, "info_player_start" );
++		if( pStart && ( pStart->pev->origin - pev->origin ).Length() < 700.0f )
++			pev->scale *= 0.17f / 0.35f;
++	}
+ 	Animate( pev->framerate * ( gpGlobals->time - m_lastTime ) );
+ 
+ 	pev->nextthink = gpGlobals->time + 0.1f;

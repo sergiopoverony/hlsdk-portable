@@ -136,6 +136,7 @@ set (CLDLL_SOURCES
 	journal_config.cpp
 	menu.cpp
 	message.cpp
+	cz_loc.cpp
 	message_strings.cpp
 	MOTD.cpp
 	nightvision.cpp

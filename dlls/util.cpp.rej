@@ -1,0 +1,17 @@
+--- dlls/util.cpp
++++ dlls/util.cpp
+@@ -1056,6 +1056,14 @@ int UTIL_IsMasterTriggered( string_t sMaster, CBaseEntity *pActivator )
+ {
+ 	if( sMaster )
+ 	{
++		// CZ: "globalstate" key (\x01 prefix): active only while that global state exists and is ON
++		const char *pszMaster = STRING( sMaster );
++		if( pszMaster[0] == '\x01' )
++		{
++			string_t state = MAKE_STRING( pszMaster + 1 );
++			return gGlobalState.EntityInTable( state ) && gGlobalState.EntityGetState( state ) == GLOBAL_ON;
++		}
++
+ 		edict_t *pentTarget = FIND_ENTITY_BY_TARGETNAME( NULL, STRING( sMaster ) );
+ 
+ 		if( !FNullEnt( pentTarget ) )

@@ -1292,6 +1292,14 @@ bool UTIL_IsMasterTriggered( string_t sMaster, CBaseEntity *pActivator )
 			reverse = true;
 		}
 
+		// CZ: "globalstate" key (\x01 prefix): active only while that global state exists and is ON
+		if( szMaster[0] == '\x01' )
+		{
+			string_t state = MAKE_STRING( szMaster + 1 );
+			bool on = gGlobalState.EntityInTable( state ) && gGlobalState.EntityGetState( state ) == GLOBAL_ON;
+			return reverse ? !on : on;
+		}
+
 		edict_t *pentTarget = FIND_ENTITY_BY_TARGETNAME( NULL, szMaster );
 		CBaseEntity *pMaster = CBaseEntity::OwnInstance( pentTarget );
 
