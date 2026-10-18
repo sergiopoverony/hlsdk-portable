@@ -250,12 +250,17 @@ public:
 	float m_lookUntil;
 	float m_headYaw;
 	void StaticThink();
+	float HeadYawToPlayer();
+	void UpdateHeadWhileSpeaking();
 };
 
 const char *Cz_PickSentence(const char *group);
 
+void Cz_NpcSpeak(CBaseEntity *pSpeaker, float seconds);
+
 static void Cz_Say(CBaseEntity *pEnt, const char *group)
 {
+	Cz_NpcSpeak(pEnt, 3.0f);
 	const char *snd = Cz_PickSentence(group);
 	if (!snd || !pEnt)
 		return;
@@ -444,32 +449,41 @@ void CCzNPC::StaticThink()
 	}
 
 	float target = 0;
-	CBaseEntity *pPlayer = UTIL_PlayerByIndex(1);
-	if (pPlayer && pPlayer->IsAlive() && (pPlayer->pev->origin - pev->origin).Length() < 256.0f)
-	{
-		Vector dir = pPlayer->pev->origin - pev->origin;
-		float yaw = UTIL_VecToYaw(dir) - pev->angles.y;
-		while (yaw > 180) yaw -= 360;
-		while (yaw < -180) yaw += 360;
-		if (yaw > 55) yaw = 55;
-		if (yaw < -55) yaw = -55;
-		target = yaw;
-	}
-	if (m_lookUntil > gpGlobals->time && pPlayer)
-	{
-		Vector dir = pPlayer->pev->origin - pev->origin;
-		float yaw = UTIL_VecToYaw(dir) - pev->angles.y;
-		while (yaw > 180) yaw -= 360;
-		while (yaw < -180) yaw += 360;
-		if (yaw > 55) yaw = 55;
-		if (yaw < -55) yaw = -55;
-		target = yaw;
-	}
+	if (m_lookUntil > gpGlobals->time)
+		target = HeadYawToPlayer();
 	float d = target - m_headYaw;
 	if (d > 15) d = 15;
 	if (d < -15) d = -15;
 	m_headYaw += d;
 	SetBoneController(0, m_headYaw);
+}
+
+float CCzNPC::HeadYawToPlayer()
+{
+	CBaseEntity *pPlayer = UTIL_PlayerByIndex(1);
+	if (!pPlayer)
+		return 0;
+	Vector dir = pPlayer->pev->origin - pev->origin;
+	float yaw = UTIL_VecToYaw(dir) - pev->angles.y;
+	while (yaw > 180) yaw -= 360;
+	while (yaw < -180) yaw += 360;
+	if (yaw > 55) yaw = 55;
+	if (yaw < -55) yaw = -55;
+	return yaw;
+}
+
+// head follows the player only while this actor is speaking / being used, then returns smoothly
+void CCzNPC::UpdateHeadWhileSpeaking()
+{
+	if (m_lookUntil > gpGlobals->time || m_headYaw != 0)
+	{
+		float target = (m_lookUntil > gpGlobals->time) ? HeadYawToPlayer() : 0;
+		float d = target - m_headYaw;
+		if (d > 15) d = 15;
+		if (d < -15) d = -15;
+		m_headYaw += d;
+		SetBoneController(0, m_headYaw);
+	}
 }
 
 void CCzNPC::MonsterThink()
@@ -481,6 +495,7 @@ void CCzNPC::MonsterThink()
 	}
 
 	CTalkMonster::MonsterThink();
+	UpdateHeadWhileSpeaking();
 
 	// keep the map-defined idle pose (sitting, typing, ...) whenever nothing else drives the actor
 	if (m_idleSeq >= 0 && !m_pCine && !IsFollowing() && !IsMoving() && pev->sequence != m_idleSeq)
@@ -495,6 +510,8 @@ void CCzNPC::MonsterThink()
 
 void CCzNPC::NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value)
 {
+	m_lookUntil = gpGlobals->time + 4.0f; // turn the head to whoever used us
+
 	// a map-defined use target wins
 	if (!FStringNull(m_useTarget) && !Cz_IsNullName(STRING(m_useTarget)))
 	{
@@ -669,6 +686,13 @@ void Cz_PlayerThink(CBasePlayer *pPlayer)
 				break;
 			}
 		}
+	}
+	// resend every 2 s while inside: the client HUD is cleared by a load / level change
+	static float s_resend[33];
+	if (in && s_resend[i] < gpGlobals->time)
+	{
+		s_resend[i] = gpGlobals->time + 2.0f;
+		s_czZoneIcon[i] = 0;
 	}
 	if (in != s_czZoneIcon[i])
 	{

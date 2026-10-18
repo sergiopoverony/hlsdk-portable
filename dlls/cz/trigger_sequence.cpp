@@ -254,6 +254,10 @@ void CTriggerSequence::Resolve()
 
 void CTriggerSequence::Precache()
 {
+	// after a save/load Spawn() is not called: m_entry is not saved and must be resolved again
+	if (!m_entry && m_entryName[0])
+		Resolve();
+
 	if (!m_entry)
 		return;
 
