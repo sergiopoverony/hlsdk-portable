@@ -534,6 +534,7 @@ int CHudAmmo::MsgFunc_HideWeapon( const char *pszName, int iSize, void *pbuf )
 	BEGIN_READ( pbuf, iSize );
 	
 	gHUD.m_iHideHUDDisplay = READ_BYTE();
+	gEngfuncs.Con_DPrintf( "HideWeapon: %d, weaponbits 0x%x\n", gHUD.m_iHideHUDDisplay, gHUD.m_iWeaponBits );
 
 	if( gEngfuncs.IsSpectateOnly() )
 		return 1;

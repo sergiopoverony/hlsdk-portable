@@ -89,6 +89,17 @@ int CHudHealth::VidInit( void )
 	m_hSprite = 0;
 
 	m_HUD_dmg_bio = gHUD.GetSpriteIndex( "dmg_bio" ) + 1;
+	{
+		// czeror hud.txt has a different sprite order: look icons up by name
+		static const char *names[NUM_DMG_TYPES] = { "dmg_poison", "dmg_chem", "dmg_cold", "dmg_drown", "dmg_heat", "dmg_gas", "dmg_rad", "dmg_shock", "dmg_caltrop", "dmg_tranq", "dmg_concuss", "dmg_halluc" };
+		for( int i = 0; i < NUM_DMG_TYPES; i++ )
+		{
+			int idx = gHUD.GetSpriteIndex( names[i] );
+			if( idx < 0 && i == 1 )
+				idx = gHUD.GetSpriteIndex( "dmg_bio" ); // dmg_chem is commented out in czeror 640 hud.txt
+			m_dmgSprite[i] = idx;
+		}
+	}
 	m_HUD_cross = gHUD.GetSpriteIndex( "cross" );
 
 	giDmgHeight = gHUD.GetSpriteRect( m_HUD_dmg_bio ).right - gHUD.GetSpriteRect( m_HUD_dmg_bio ).left;
@@ -166,7 +177,7 @@ void CHudHealth::GetPainColor( int &r, int &g, int &b )
 #else
 	if( m_iHealth > 25 )
 	{
-		UnpackRGB( r, g, b, RGB_YELLOWISH );
+		r = 50; g = 250; b = 50; // CZ: green HUD
 	}
 	else
 	{
@@ -232,7 +243,7 @@ int CHudHealth::Draw( float flTime )
 
 		int iHeight = gHUD.m_iFontHeight;
 		int iWidth = HealthWidth / 10;
-		UnpackRGB( r, g, b, RGB_YELLOWISH );
+		r = 50; g = 250; b = 50;
 		FillRGBA( x, y + gHUD.m_iHudNumbersYOffset, iWidth, iHeight, r, g, b, a );
 	}
 
@@ -395,8 +406,11 @@ int CHudHealth::DrawDamage( float flTime )
 			pdmg = &m_dmg[i];
 
 			// Draw all the items
-			SPR_Set( gHUD.GetSprite( m_HUD_dmg_bio + i ), r, g, b );
-			SPR_DrawAdditive( 0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect( m_HUD_dmg_bio + i ) );
+			if( m_dmgSprite[i] >= 0 )
+			{
+				SPR_Set( gHUD.GetSprite( m_dmgSprite[i] ), r, g, b );
+				SPR_DrawAdditive( 0, pdmg->x, pdmg->y, &gHUD.GetSpriteRect( m_dmgSprite[i] ) );
+			}
 
 			pdmg->fExpire = Q_min( flTime + DMG_IMAGE_LIFE, pdmg->fExpire );
 

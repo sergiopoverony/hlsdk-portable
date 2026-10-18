@@ -151,6 +151,7 @@ int gmsgFade = 0;
 int gmsgSelAmmo = 0;
 int gmsgFlashlight = 0;
 int gmsgFlashBattery = 0;
+int gmsgStatusIcon = 0;
 int gmsgResetHUD = 0;
 int gmsgInitHUD = 0;
 int gmsgShowGameTitle = 0;
@@ -198,6 +199,7 @@ void LinkUserMessages( void )
 	gmsgGeigerRange = REG_USER_MSG( "Geiger", 1 );
 	gmsgFlashlight = REG_USER_MSG( "Flashlight", 2 );
 	gmsgFlashBattery = REG_USER_MSG( "FlashBat", 1 );
+	gmsgStatusIcon = REG_USER_MSG( "StatusIcon", -1 );
 	gmsgHealth = REG_USER_MSG( "Health", 1 );
 	gmsgDamage = REG_USER_MSG( "Damage", 12 );
 	gmsgBattery = REG_USER_MSG( "Battery", 2);
@@ -2604,8 +2606,12 @@ void CBasePlayer::UpdatePlayerSound( void )
 	//ALERT( at_console, "%d/%d\n", iVolume, m_iTargetVolume );
 }
 
+extern void Cz_PlayerThink( CBasePlayer *pPlayer );
+extern void Cz_PlayerSpawn( CBasePlayer *pPlayer );
+
 void CBasePlayer::PostThink()
 {
+	Cz_PlayerThink( this );
 	if( g_fGameOver )
 		goto pt_end;	// intermission or finale
 
@@ -2905,6 +2911,7 @@ ReturnSpot:
 
 void CBasePlayer::Spawn( void )
 {
+	Cz_PlayerSpawn( this );
 	m_flStartCharge = gpGlobals->time;
 	pev->classname = MAKE_STRING( "player" );
 	pev->health = 100;

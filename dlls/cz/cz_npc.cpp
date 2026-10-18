@@ -3,6 +3,7 @@
 #include "cbase.h"
 #include "monsters.h"
 #include "talkmonster.h"
+#include "player.h"
 #include "schedule.h"
 #include "saverestore.h"
 #include "animation.h"
@@ -246,10 +247,27 @@ public:
 	int m_idleSeq;
 	int m_spawned;
 	int m_cantMove;
+	float m_lookUntil;
+	float m_headYaw;
+	void StaticThink();
 };
+
+const char *Cz_PickSentence(const char *group);
+
+static void Cz_Say(CBaseEntity *pEnt, const char *group)
+{
+	const char *snd = Cz_PickSentence(group);
+	if (!snd || !pEnt)
+		return;
+	char path[256];
+	snprintf(path, sizeof(path), "%s.wav", snd);
+	EMIT_SOUND_DYN2(ENT(pEnt->pev), CHAN_VOICE, path, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+}
 
 TYPEDESCRIPTION CCzNPC::m_SaveData[] =
 {
+	DEFINE_FIELD(CCzNPC, m_lookUntil, FIELD_TIME),
+	DEFINE_FIELD(CCzNPC, m_headYaw, FIELD_FLOAT),
 	DEFINE_FIELD(CCzNPC, m_idleName, FIELD_STRING),
 	DEFINE_FIELD(CCzNPC, m_useTarget, FIELD_STRING),
 	DEFINE_FIELD(CCzNPC, m_head, FIELD_INTEGER),
@@ -405,8 +423,63 @@ Schedule_t *CCzNPC::GetSchedule()
 	return CBaseMonster::GetSchedule();
 }
 
+// Seated / working actors: no AI at all, so the body never turns or gets pushed away;
+// only the head (bone controller 0) follows the player.
+void CCzNPC::StaticThink()
+{
+	pev->nextthink = gpGlobals->time + 0.1f;
+	pev->velocity = g_vecZero;
+
+	if (pev->sequence != m_idleSeq)
+	{
+		pev->sequence = m_idleSeq;
+		pev->frame = 0;
+		ResetSequenceInfo();
+	}
+	StudioFrameAdvance();
+	if (m_fSequenceFinished && !m_fSequenceLoops)
+	{
+		pev->frame = 0;
+		ResetSequenceInfo();
+	}
+
+	float target = 0;
+	CBaseEntity *pPlayer = UTIL_PlayerByIndex(1);
+	if (pPlayer && pPlayer->IsAlive() && (pPlayer->pev->origin - pev->origin).Length() < 256.0f)
+	{
+		Vector dir = pPlayer->pev->origin - pev->origin;
+		float yaw = UTIL_VecToYaw(dir) - pev->angles.y;
+		while (yaw > 180) yaw -= 360;
+		while (yaw < -180) yaw += 360;
+		if (yaw > 55) yaw = 55;
+		if (yaw < -55) yaw = -55;
+		target = yaw;
+	}
+	if (m_lookUntil > gpGlobals->time && pPlayer)
+	{
+		Vector dir = pPlayer->pev->origin - pev->origin;
+		float yaw = UTIL_VecToYaw(dir) - pev->angles.y;
+		while (yaw > 180) yaw -= 360;
+		while (yaw < -180) yaw += 360;
+		if (yaw > 55) yaw = 55;
+		if (yaw < -55) yaw = -55;
+		target = yaw;
+	}
+	float d = target - m_headYaw;
+	if (d > 15) d = 15;
+	if (d < -15) d = -15;
+	m_headYaw += d;
+	SetBoneController(0, m_headYaw);
+}
+
 void CCzNPC::MonsterThink()
 {
+	if (m_idleSeq >= 0 && !m_pCine && m_MonsterState != MONSTERSTATE_SCRIPT && m_IdealMonsterState != MONSTERSTATE_SCRIPT && !IsFollowing())
+	{
+		StaticThink();
+		return;
+	}
+
 	CTalkMonster::MonsterThink();
 
 	// keep the map-defined idle pose (sitting, typing, ...) whenever nothing else drives the actor
@@ -434,7 +507,18 @@ void CCzNPC::NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useT
 		return;
 
 	// no use target: the actor follows the player (door-opener hostage)
+	BOOL was = IsFollowing();
 	FollowerUse(pActivator, pCaller, useType, value);
+	if (!was && IsFollowing())
+		Cz_Say(this, "NPC_OK_AM");
+	else if (was && !IsFollowing())
+		Cz_Say(this, "NPC_WAIT_AM");
+}
+
+void Cz_NpcSpeak(CBaseEntity *pSpeaker, float seconds)
+{
+	if (pSpeaker && (FClassnameIs(pSpeaker->pev, "monster_npc") || FClassnameIs(pSpeaker->pev, "monster_hostage") || FClassnameIs(pSpeaker->pev, "monster_generic")))
+		((CCzNPC *)pSpeaker)->m_lookUntil = gpGlobals->time + seconds;
 }
 
 // ---------------------------------------------------------------------------
@@ -495,7 +579,12 @@ void CCzHostage::HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_T
 	if (m_rescued)
 		return;
 
+	BOOL was = IsFollowing();
 	FollowerUse(pActivator, pCaller, useType, value);
+	if (!was && IsFollowing())
+		Cz_Say(this, "H_HELP_AM");
+	else if (was && !IsFollowing())
+		Cz_Say(this, "NPC_WAIT_AM");
 }
 
 void CCzHostage::Rescue(CBaseEntity *pActivator)
@@ -504,6 +593,7 @@ void CCzHostage::Rescue(CBaseEntity *pActivator)
 	StopFollowing(FALSE);
 	SetUse(NULL);
 	m_idleSeq = -1;
+	Cz_Say(this, "H_THANK_AM");
 
 	if (!FStringNull(m_rescueTarget))
 		FireTargets(STRING(m_rescueTarget), pActivator, this, USE_TOGGLE, 0);
@@ -524,5 +614,65 @@ void CCzHostage::MonsterThink()
 			Rescue(UTIL_PlayerByIndex(1));
 			break;
 		}
+	}
+}
+
+
+// ---------------------------------------------------------------------------
+// Rescue zone HUD icon (original: icon_hostagezone shown while the player is within 256 units
+// of info_hostage_rescue; HudIcons bit 1024, always green)
+// ---------------------------------------------------------------------------
+extern int gmsgStatusIcon;
+static int s_czZoneIcon[33];
+static float s_czZoneNext[33];
+
+static void Cz_SendZoneIcon(CBasePlayer *pPlayer, int on)
+{
+	MESSAGE_BEGIN(MSG_ONE, gmsgStatusIcon, NULL, pPlayer->pev);
+		WRITE_BYTE(on ? 1 : 0);
+		WRITE_STRING("icon_hostagezone");
+		if (on)
+		{
+			WRITE_BYTE(50);
+			WRITE_BYTE(250);
+			WRITE_BYTE(50);
+		}
+	MESSAGE_END();
+}
+
+void Cz_PlayerSpawn(CBasePlayer *pPlayer)
+{
+	int i = pPlayer->entindex();
+	if (i >= 1 && i <= 32)
+	{
+		s_czZoneIcon[i] = 0;
+		s_czZoneNext[i] = 0;
+	}
+}
+
+void Cz_PlayerThink(CBasePlayer *pPlayer)
+{
+	int i = pPlayer->entindex();
+	if (i < 1 || i > 32 || s_czZoneNext[i] > gpGlobals->time)
+		return;
+	s_czZoneNext[i] = gpGlobals->time + 0.2f;
+
+	int in = 0;
+	if (pPlayer->IsAlive())
+	{
+		CBaseEntity *pZone = NULL;
+		while ((pZone = UTIL_FindEntityByClassname(pZone, "info_hostage_rescue")) != NULL)
+		{
+			if ((pZone->pev->origin - pPlayer->pev->origin).Length() < 256.0f)
+			{
+				in = 1;
+				break;
+			}
+		}
+	}
+	if (in != s_czZoneIcon[i])
+	{
+		s_czZoneIcon[i] = in;
+		Cz_SendZoneIcon(pPlayer, in);
 	}
 }

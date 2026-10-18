@@ -426,8 +426,18 @@ void CTriggerSequence::ExecuteText(const czseq::Command &cmd)
 	UTIL_HudMessageAll(p, msg);
 }
 
-// CZ: NPC head turn while speaking (implemented with monster_npc)
-void Cz_NpcSpeak(CBaseEntity *pSpeaker, float seconds) {}
+// picks a random sentence of the group (e.g. "H_HELP_AM"); returns sound path without extension or NULL
+const char *Cz_PickSentence(const char *group)
+{
+	static std::string s_picked;
+	const std::string *p = g_seqLib.PickSentence(group);
+	if (!p)
+		return NULL;
+	s_picked = *p;
+	return s_picked.c_str();
+}
+
+void Cz_NpcSpeak(CBaseEntity *pSpeaker, float seconds); // cz_npc.cpp
 
 void CTriggerSequence::ExecuteSound(const czseq::Command &cmd)
 {
