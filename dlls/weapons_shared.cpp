@@ -1817,6 +1817,13 @@ void CConfigurableWeapon::ProjectileAttack(bool altMode)
 				maxGrenadeVel = 1000.0f;
 			velMultiplier = 6.5f;
 		}
+		else if (grenadePhys == WeaponParameters::Fire::GRENADEPHYS_CS)
+		{
+			// Counter-Strike: (90 - pitch) * 6, capped at 750
+			if (customSpeed <= 0.0f)
+				maxGrenadeVel = 750.0f;
+			velMultiplier = 6.0f;
+		}
 
 		grenadeVel = (90.0f - aimAngles.x) * velMultiplier;
 		if (grenadeVel > maxGrenadeVel)

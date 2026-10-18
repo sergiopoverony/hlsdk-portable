@@ -281,6 +281,7 @@ void CCzSoldier::Spawn()
 
 	m_react = 0;
 	Settle();
+	ALERT(at_console, "soldier: %s made=%d modelindex=%d origin %.0f %.0f %.0f sequence %d\n", cls, m_bMade, pev->modelindex, pev->origin.x, pev->origin.y, pev->origin.z, pev->sequence);
 	SetThink(&CCzSoldier::AnimThink);
 	pev->nextthink = gpGlobals->time + 0.1f;
 }

@@ -1262,6 +1262,8 @@ void CItemGeneric::StartupThink()
 	}
 	pev->frame = 0;
 	ResetSequenceInfo();
+	if (pev->framerate <= 0.0f)
+		pev->framerate = 1.0f;
 	SetThink(&CItemGeneric::SequenceThink);
 	pev->nextthink = gpGlobals->time + 0.01f;
 }
@@ -1281,7 +1283,8 @@ void CItemGeneric::SequenceThink()
 		pev->frame = 0;
 		ResetSequenceInfo();
 
-		if (!m_fSequenceLoops)
+		// CZ: props keep animating even if the sequence isn't flagged as looping
+		if (!m_fSequenceLoops && strncmp(STRING(gpGlobals->mapname), "cz_", 3) != 0)
 		{
 			SetThink(NULL);
 		}

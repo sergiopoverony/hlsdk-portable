@@ -454,7 +454,8 @@ static WeaponParameters CzGrenadeParams(const char* ammo, int maxCarry, const ch
 	params.fire.projectileRespectPunchangle = true;
 	params.fire.projectileDetonationTime = 1.5f;
 	params.fire.projectileDetonationCooked = false;
-	params.fire.projectileGrenadePhysics = WeaponParameters::Fire::GRENADEPHYS_AUTO;
+	params.fire.projectileGrenadePhysics = WeaponParameters::Fire::GRENADEPHYS_CS;
+	params.fire.projectileSpeed = 750.0f;
 	params.dropAmmo.classname = "";
 	params.exhausitble = true;
 	(void)maxCarry;
