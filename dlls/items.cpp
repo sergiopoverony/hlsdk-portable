@@ -1138,8 +1138,10 @@ public:
 
 	void EXPORT StartupThink();
 	void EXPORT SequenceThink();
+	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value) override;
 
 	string_t m_iszSequenceName;
+	int m_czRemoveOnUse;
 };
 
 LINK_ENTITY_TO_CLASS(item_generic, CItemGeneric)
@@ -1147,6 +1149,7 @@ LINK_ENTITY_TO_CLASS(item_generic, CItemGeneric)
 TYPEDESCRIPTION CItemGeneric::m_SaveData[] =
 {
 	DEFINE_FIELD(CItemGeneric, m_iszSequenceName, FIELD_STRING),
+	DEFINE_FIELD(CItemGeneric, m_czRemoveOnUse, FIELD_INTEGER),
 };
 IMPLEMENT_SAVERESTORE(CItemGeneric, CBaseAnimating)
 
@@ -1209,8 +1212,23 @@ void CItemGeneric::KeyValue(KeyValueData* pkvd)
 		m_iszSequenceName = ALLOC_STRING(pkvd->szValue);
 		pkvd->fHandled = true;
 	}
+	else if (FStrEq(pkvd->szKeyName, "removeonuse"))
+	{
+		m_czRemoveOnUse = atoi(pkvd->szValue);
+		pkvd->fHandled = true;
+	}
 	else
 		CBaseAnimating::KeyValue(pkvd);
+}
+
+// CZ: Use fires targets; removeonuse (and the broken padlock) removes the prop
+void CItemGeneric::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	if (!m_czRemoveOnUse && !(pev->model && strstr(STRING(pev->model), "padlock")))
+		return;
+	SUB_UseTargets(pActivator, USE_TOGGLE, 0);
+	SetThink(&CBaseEntity::SUB_Remove);
+	pev->nextthink = gpGlobals->time + 0.01f;
 }
 
 int CItemGeneric::ObjectCaps()

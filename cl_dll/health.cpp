@@ -533,7 +533,29 @@ int CHudHealth::DrawDamage( float flTime )
 			pdmg = &m_dmg[i];
 
 			// Draw all the items
-			CHud::Renderer().SPR_DrawAdditive( gHUD.GetSprite( m_HUD_dmg_bio + i ), r, g, b, pdmg->x, pdmg->y, &gHUD.GetSpriteRect( m_HUD_dmg_bio + i ) );
+			{
+				// CZ: czeror hud.txt has a different sprite order, look icons up by name
+				static const char* names[NUM_DMG_TYPES] = { "dmg_poison", "dmg_chem", "dmg_cold", "dmg_drown", "dmg_heat", "dmg_gas", "dmg_rad", "dmg_shock" };
+				int idx = gHUD.GetSpriteIndex( names[i] );
+				wrect_t rc;
+				HSPRITE spr;
+				if( idx >= 0 )
+				{
+					spr = gHUD.GetSprite( idx );
+					rc = gHUD.GetSpriteRect( idx );
+				}
+				else
+				{
+					// chemical hazard sign sits left of dmg_bio on the same sheet
+					int bio = gHUD.GetSpriteIndex( "dmg_bio" );
+					spr = gHUD.GetSprite( bio );
+					rc = gHUD.GetSpriteRect( bio );
+					int w = rc.right - rc.left;
+					rc.left -= w * 2;
+					rc.right -= w * 2;
+				}
+				CHud::Renderer().SPR_DrawAdditive( spr, r, g, b, pdmg->x, pdmg->y, &rc );
+			}
 
 			pdmg->fExpire = Q_min( flTime + DMG_IMAGE_LIFE, pdmg->fExpire );
 

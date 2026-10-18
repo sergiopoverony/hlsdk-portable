@@ -545,7 +545,15 @@ void CHudMessage::MessageAdd( const char *pName, float time, bool skipMissing )
 				g_pCustomMessage.fxtime = 0.25f;
 				g_pCustomMessage.holdtime = 5;
 				g_pCustomMessage.pName = g_pCustomName;
-				strncpyEnsureTermination( g_pCustomText, pName );
+				// CZ: "#KEY" -> localized text
+				if( pName[0] == '#' )
+				{
+					extern const char *Cz_Localize( const char *key );
+					const char *loc = Cz_Localize( pName + 1 );
+					strncpyEnsureTermination( g_pCustomText, loc ? loc : pName );
+				}
+				else
+					strncpyEnsureTermination( g_pCustomText, pName );
 				g_pCustomMessage.pMessage = g_pCustomText;
 
 				tempMessage = &g_pCustomMessage;

@@ -418,6 +418,38 @@ public:
 	int ChargeRate() override {
 		return (int)GetSkillValue("healthcharger_rate");
 	}
+	int ObjectCaps() override
+	{
+		int caps = CWallCharger::ObjectCaps();
+		if (strncmp(STRING(gpGlobals->mapname), "cz_", 3) == 0)
+			caps = (caps & ~FCAP_CONTINUOUS_USE) | FCAP_IMPULSE_USE;
+		return caps;
+	}
+	// CZ: each half gives 50 HP at once on a single press, then shows the empty frame
+	void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value ) override
+	{
+		if (strncmp(STRING(gpGlobals->mapname), "cz_", 3) != 0 || !pActivator || !pActivator->IsPlayer())
+		{
+			CWallCharger::Use(pActivator, pCaller, useType, value);
+			return;
+		}
+		CBasePlayer* pPlayer = (CBasePlayer*)pActivator;
+		if (m_iJuice <= 0 || !pPlayer->HasSuit() || pPlayer->pev->health >= pPlayer->pev->max_health)
+		{
+			if (m_flSoundTime <= gpGlobals->time)
+			{
+				m_flSoundTime = gpGlobals->time + 0.62f;
+				PlayChargerSound(DenySoundScript(), CustomDenySound());
+			}
+			return;
+		}
+		pPlayer->TakeHealth(this, 50, HEAL_CHARGE|HEAL_FROM_CHARGER);
+		PlayChargerSound(ChargeStartSoundScript(), CustomChargeStartSound());
+		m_iJuice = 0;
+		pev->frame = OffStateFrame();
+		if (m_triggerOnEmpty)
+			FireTargets( STRING( m_triggerOnEmpty ), this, this );
+	}
 	int GiveCharge(CBaseEntity* pActivator) override
 	{
 		int value = Q_max(m_chargeRate, 1);
