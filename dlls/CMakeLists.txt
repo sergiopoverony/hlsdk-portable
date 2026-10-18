@@ -137,6 +137,8 @@ set (SVDLL_SOURCES
 	tempmonster.cpp
 	tentacle.cpp
 	triggers.cpp
+	cz/cz_sequence.cpp
+	cz/trigger_sequence.cpp
 	tripmine.cpp
 	turret.cpp
 	util.cpp
