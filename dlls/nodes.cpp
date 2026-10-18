@@ -2383,7 +2383,7 @@ int CGraph::FLoadGraph( const char *szMapName )
 	strcat( szDirName, "/graphs" );
 	CreateDirectoryA( szDirName, NULL );
 
-	strcpy( szFilename, "maps/graphs/czds_" );
+	strcpy( szFilename, "maps/graphs/" );
 	strcat( szFilename, szMapName );
 	strcat( szFilename, ".nod" );
 
@@ -2434,6 +2434,22 @@ int CGraph::FLoadGraph( const char *szMapName )
 		}
 #endif
 
+		// Original Condition Zero graphs: CNode is 96 bytes (8 extra bytes), DIST_INFO is 16 bytes (1 extra int).
+		// Detect by exact file length.
+		bool czFormat = false;
+		{
+			const int czNodeSize = 96, czDistSize = 16;
+			long expected = (long)sizeof(CNode) * m_cNodes + (long)sizeof(CLink) * m_cLinks
+				+ (long)sizeof(DIST_INFO) * m_cNodes + m_nRouteInfo + (long)sizeof(short) * m_nHashLinks;
+			long czExpected = (long)czNodeSize * m_cNodes + (long)sizeof(CLink) * m_cLinks
+				+ (long)czDistSize * m_cNodes + m_nRouteInfo + (long)sizeof(short) * m_nHashLinks;
+			if( length != expected && length == czExpected )
+			{
+				czFormat = true;
+				ALERT( at_console, "Loading original CZ node graph (%d nodes, %d links)\n", m_cNodes, m_cLinks );
+			}
+		}
+
 		// Malloc for the nodes
 		//
 		m_pNodes = (CNode *)calloc( sizeof(CNode), m_cNodes );
@@ -2446,11 +2462,23 @@ int CGraph::FLoadGraph( const char *szMapName )
 
 		// Read in all the nodes
 		//
-		length -= sizeof(CNode) * m_cNodes;
-		if( length < 0 )
-			goto ShortFile;
-		memcpy( m_pNodes, pMemFile, sizeof(CNode) * m_cNodes );
-		pMemFile += sizeof(CNode) * m_cNodes;
+		if( czFormat )
+		{
+			length -= 96 * m_cNodes;
+			if( length < 0 )
+				goto ShortFile;
+			for( int n = 0; n < m_cNodes; n++ )
+				memcpy( &m_pNodes[n], pMemFile + 96 * n, sizeof(CNode) );
+			pMemFile += 96 * m_cNodes;
+		}
+		else
+		{
+			length -= sizeof(CNode) * m_cNodes;
+			if( length < 0 )
+				goto ShortFile;
+			memcpy( m_pNodes, pMemFile, sizeof(CNode) * m_cNodes );
+			pMemFile += sizeof(CNode) * m_cNodes;
+		}
 
 		ByteswapNodes();
 
@@ -2502,11 +2530,23 @@ int CGraph::FLoadGraph( const char *szMapName )
 
 		// Read it in.
 		//
-		length -= sizeof(DIST_INFO) * m_cNodes;
-		if( length < 0 )
-			goto ShortFile;
-		memcpy( m_di, pMemFile, sizeof(DIST_INFO) * m_cNodes );
-		pMemFile += sizeof(DIST_INFO) * m_cNodes;
+		if( czFormat )
+		{
+			length -= 16 * m_cNodes;
+			if( length < 0 )
+				goto ShortFile;
+			for( int n = 0; n < m_cNodes; n++ )
+				memcpy( &m_di[n], pMemFile + 16 * n, sizeof(DIST_INFO) );
+			pMemFile += 16 * m_cNodes;
+		}
+		else
+		{
+			length -= sizeof(DIST_INFO) * m_cNodes;
+			if( length < 0 )
+				goto ShortFile;
+			memcpy( m_di, pMemFile, sizeof(DIST_INFO) * m_cNodes );
+			pMemFile += sizeof(DIST_INFO) * m_cNodes;
+		}
 
 		ByteswapDistInfo();
 
@@ -2605,7 +2645,7 @@ int CGraph::FSaveGraph( const char *szMapName )
 	strcat( szFilename, "/graphs" );
 	CreateDirectoryA( szFilename, NULL );
 
-	strcat( szFilename, "/czds_" );
+	strcat( szFilename, "/" );
 	strcat( szFilename, szMapName );
 	strcat( szFilename, ".nod" );
 
@@ -2745,7 +2785,7 @@ int CGraph::CheckNODFile( const char *szMapName )
 	strcat( szBspFilename, szMapName );
 	strcat( szBspFilename, ".bsp" );
 
-	strcpy( szGraphFilename, "maps/graphs/czds_" );
+	strcpy( szGraphFilename, "maps/graphs/" );
 	strcat( szGraphFilename, szMapName );
 	strcat( szGraphFilename, ".nod" );
 
@@ -2754,7 +2794,11 @@ int CGraph::CheckNODFile( const char *szMapName )
 	int iCompare;
 	if( COMPARE_FILE_TIME( szBspFilename, szGraphFilename, &iCompare ) )
 	{
-		if( iCompare > 0 )
+		if( iCompare > 0 && !strncmp( szMapName, "cz_", 3 ) )
+		{
+			// CZ: keep the original graph even if the copied BSP looks newer
+		}
+		else if( iCompare > 0 )
 		{
 			// BSP file is newer.
 			ALERT( at_aiconsole, ".NOD File will be updated\n\n" );
