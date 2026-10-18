@@ -467,8 +467,8 @@ float CCzNPC::HeadYawToPlayer()
 	float yaw = UTIL_VecToYaw(dir) - pev->angles.y;
 	while (yaw > 180) yaw -= 360;
 	while (yaw < -180) yaw += 360;
-	if (yaw > 55) yaw = 55;
-	if (yaw < -55) yaw = -55;
+	if (yaw > 40) yaw = 40;
+	if (yaw < -40) yaw = -40;
 	return yaw;
 }
 
@@ -596,12 +596,33 @@ void CCzHostage::HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_T
 	if (m_rescued)
 		return;
 
-	BOOL was = IsFollowing();
-	FollowerUse(pActivator, pCaller, useType, value);
-	if (!was && IsFollowing())
-		Cz_Say(this, "H_HELP_AM");
-	else if (was && !IsFollowing())
+	m_lookUntil = gpGlobals->time + 4.0f;
+	if (!pActivator || !pActivator->IsPlayer())
+		pActivator = UTIL_PlayerByIndex(1);
+	if (!pActivator)
+		return;
+
+	// do not depend on talkmonster's sentence timer / script state: the hostage must always answer
+	m_useTime = 0;
+	m_bitsSaid = 0;
+	m_afMemory &= ~bits_MEMORY_PROVOKED;
+	ALERT(at_aiconsole, "hostage '%s' used: following=%d state=%d cine=%d\n", STRING(pev->targetname), IsFollowing(), m_MonsterState, m_pCine != NULL);
+
+	if (IsFollowing())
+	{
+		StopFollowing(FALSE);
 		Cz_Say(this, "NPC_WAIT_AM");
+	}
+	else
+	{
+		if (m_pCine)
+			m_pCine->CancelScript();
+		m_idleSeq = -1;
+		LimitFollowers(pActivator, 1);
+		StartFollowing(pActivator);
+		m_MonsterState = MONSTERSTATE_IDLE;
+		Cz_Say(this, "H_HELP_AM");
+	}
 }
 
 void CCzHostage::Rescue(CBaseEntity *pActivator)
@@ -667,8 +688,20 @@ void Cz_PlayerSpawn(CBasePlayer *pPlayer)
 	}
 }
 
+static cvar_t cz_maxspeed = { "cz_maxspeed", "250", FCVAR_SERVER };
+static int s_czSpeedCvar;
+
 void Cz_PlayerThink(CBasePlayer *pPlayer)
 {
+	// CS / CZ walk speed (HL default 320 is too fast); frozen players keep 1
+	if (!s_czSpeedCvar)
+	{
+		s_czSpeedCvar = 1;
+		CVAR_REGISTER(&cz_maxspeed);
+	}
+	if (pPlayer->IsAlive() && !(pPlayer->pev->flags & FL_FROZEN) && pPlayer->pev->maxspeed > 1.0f)
+		pPlayer->pev->maxspeed = cz_maxspeed.value;
+
 	int i = pPlayer->entindex();
 	if (i < 1 || i > 32 || s_czZoneNext[i] > gpGlobals->time)
 		return;
