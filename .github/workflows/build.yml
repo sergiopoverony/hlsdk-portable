@@ -18,12 +18,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            cc: gcc
-            cxx: g++
-          - os: ubuntu-latest
-            cc: clang
-            cxx: clang++
           - os: windows-latest
             cc: cl
             cxx: cl
@@ -80,12 +74,12 @@ jobs:
         cmake --build build --target install
 
     - name: Set developer command prompt for Windows x86_64
-      if: startsWith(matrix.os, 'windows')
+      if: false  # CZDS: x86 only for fast iterations
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
     - name: Build on Windows x64
-      if: startsWith(matrix.os, 'windows')
+      if: false
       run: |
         cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -B build64 -S . -DCMAKE_INSTALL_PREFIX="dist64" -D64BIT=ON
         cmake --build build64 --target all
@@ -97,7 +91,7 @@ jobs:
       id: extract_branch
     - name: Extract gamedir
       shell: bash
-      run: echo "gamedir=$(grep build/CMakeCache.txt -Ee 'GAMEDIR:STRING=[a-z]+' | cut -d '=' -f 2)" >> $GITHUB_OUTPUT
+      run: echo "gamedir=$(grep build/CMakeCache.txt -Ee 'GAMEDIR:STRING=[a-z0-9]+' | cut -d '=' -f 2)" >> $GITHUB_OUTPUT
       id: extract_gamedir
     - name: Upload linux artifact
       if: startsWith(matrix.os, 'ubuntu') && matrix.cc == 'gcc'
@@ -112,7 +106,7 @@ jobs:
         name: hlsdk-${{ steps.extract_branch.outputs.branch }}-windows
         path: dist/${{ steps.extract_gamedir.outputs.gamedir }}
     - name: Upload windows x64 artifact
-      if: startsWith(matrix.os, 'windows')
+      if: false
       uses: actions/upload-artifact@v4
       with:
         name: hlsdk-${{ steps.extract_branch.outputs.branch }}-windows_x64
