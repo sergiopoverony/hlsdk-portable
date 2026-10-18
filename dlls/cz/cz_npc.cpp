@@ -5,6 +5,7 @@
 #include "talkmonster.h"
 #include "player.h"
 #include "schedule.h"
+#include "defaultai.h"
 #include "saverestore.h"
 #include "animation.h"
 #include "scripted.h"
@@ -233,6 +234,7 @@ public:
 
 	void SetActivity(Activity newActivity);
 	Schedule_t *GetSchedule();
+	Schedule_t *GetScheduleOfType(int Type);
 	void MonsterThink();
 	void EXPORT NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
 
@@ -409,6 +411,53 @@ void CCzNPC::Spawn()
 	pev->takedamage = DAMAGE_NO;
 }
 
+static Task_t tlCzFollow[] =
+{
+	{ TASK_SET_FAIL_SCHEDULE, (float)SCHED_TARGET_FACE },
+	{ TASK_MOVE_TO_TARGET_RANGE, 128.0f },
+};
+static Schedule_t slCzFollow[] =
+{
+	{ tlCzFollow, ARRAYSIZE(tlCzFollow), bits_COND_NEW_ENEMY | bits_COND_LIGHT_DAMAGE | bits_COND_HEAVY_DAMAGE, 0, "CzFollow" },
+};
+static Task_t tlCzFaceTarget[] =
+{
+	{ TASK_STOP_MOVING, 0.0f },
+	{ TASK_FACE_TARGET, 0.0f },
+	{ TASK_SET_ACTIVITY, (float)ACT_IDLE },
+	{ TASK_SET_SCHEDULE, (float)SCHED_TARGET_CHASE },
+};
+static Schedule_t slCzFaceTarget[] =
+{
+	{ tlCzFaceTarget, ARRAYSIZE(tlCzFaceTarget), bits_COND_CLIENT_PUSH | bits_COND_NEW_ENEMY, 0, "CzFaceTarget" },
+};
+static Task_t tlCzStopFollow[] =
+{
+	{ TASK_STOP_MOVING, 0.0f },
+	{ TASK_SET_ACTIVITY, (float)ACT_IDLE },
+};
+static Schedule_t slCzStopFollow[] =
+{
+	{ tlCzStopFollow, ARRAYSIZE(tlCzStopFollow), 0, 0, "CzStopFollow" },
+};
+
+Schedule_t *CCzNPC::GetScheduleOfType(int Type)
+{
+	switch (Type)
+	{
+	case SCHED_TARGET_FACE:
+	{
+		Schedule_t *p = CTalkMonster::GetScheduleOfType(Type);
+		return (p == slIdleStand) ? slCzFaceTarget : p;
+	}
+	case SCHED_TARGET_CHASE:
+		return slCzFollow;
+	case SCHED_CANT_FOLLOW:
+		return slCzStopFollow;
+	}
+	return CTalkMonster::GetScheduleOfType(Type);
+}
+
 Schedule_t *CCzNPC::GetSchedule()
 {
 	if (m_MonsterState == MONSTERSTATE_IDLE || m_MonsterState == MONSTERSTATE_ALERT)
@@ -525,7 +574,10 @@ void CCzNPC::NpcUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useT
 
 	// no use target: the actor follows the player (door-opener hostage)
 	BOOL was = IsFollowing();
+	m_useTime = 0;
 	FollowerUse(pActivator, pCaller, useType, value);
+	if (was != IsFollowing())
+		ClearSchedule();
 	if (!was && IsFollowing())
 		Cz_Say(this, "NPC_OK_AM");
 	else if (was && !IsFollowing())
@@ -621,6 +673,7 @@ void CCzHostage::HostageUse(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_T
 		LimitFollowers(pActivator, 1);
 		StartFollowing(pActivator);
 		m_MonsterState = MONSTERSTATE_IDLE;
+		ClearSchedule();
 		Cz_Say(this, "H_HELP_AM");
 	}
 }
@@ -699,7 +752,7 @@ void Cz_PlayerThink(CBasePlayer *pPlayer)
 		s_czSpeedCvar = 1;
 		CVAR_REGISTER(&cz_maxspeed);
 	}
-	if (pPlayer->IsAlive() && !(pPlayer->pev->flags & FL_FROZEN) && pPlayer->pev->maxspeed > 1.0f)
+	if (pPlayer->IsAlive() && !(pPlayer->pev->flags & FL_FROZEN) && pPlayer->pev->maxspeed != 1.0f)
 		pPlayer->pev->maxspeed = cz_maxspeed.value;
 
 	int i = pPlayer->entindex();
