@@ -491,6 +491,12 @@ void TryConsumeKeyAndValue(char* buffer, const int length, char*& key, char*& va
 
 void ReadEnabledWeapons()
 {
+	// CZ: these weapons are built in, so the mod works without features/*.cfg in the game dir
+	{
+		static const char* czWeapons[] = { "camera", "radio", "blowtorch", "usp", "m4a1", "awp", "aug", "hegrenade", "flashbang", "smokegrenade" };
+		for (size_t i = 0; i < ARRAYSIZE(czWeapons); ++i)
+			g_modFeatures.EnableWeapon(czWeapons[i], true);
+	}
 	const char* fileName = "features/featureful_weapons.cfg";
 	int filePos = 0, fileSize;
 	byte *pMemFile = g_engfuncs.pfnLoadFileForMe(fileName, &fileSize);
