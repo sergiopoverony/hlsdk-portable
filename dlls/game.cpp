@@ -315,6 +315,7 @@ bool ModFeatures::EnableWeapon(const char *name, bool enable)
 		WeaponNameAndId("hegrenade", WEAPON_HEGRENADE),
 		WeaponNameAndId("flashbang", WEAPON_FLASHBANG),
 		WeaponNameAndId("smokegrenade", WEAPON_SMOKEGRENADE),
+		WeaponNameAndId("radiocontrolledbomb", WEAPON_RCBOMB),
 		WeaponNameAndId("camera", WEAPON_CAMERA),
 		WeaponNameAndId("radio", WEAPON_RADIO),
 		WeaponNameAndId("blowtorch", WEAPON_BTORCH),
@@ -493,7 +494,7 @@ void ReadEnabledWeapons()
 {
 	// CZ: these weapons are built in, so the mod works without features/*.cfg in the game dir
 	{
-		static const char* czWeapons[] = { "camera", "radio", "blowtorch", "usp", "m4a1", "awp", "aug", "hegrenade", "flashbang", "smokegrenade" };
+		static const char* czWeapons[] = { "camera", "radio", "blowtorch", "usp", "m4a1", "awp", "aug", "hegrenade", "flashbang", "smokegrenade", "radiocontrolledbomb" };
 		for (size_t i = 0; i < ARRAYSIZE(czWeapons); ++i)
 			g_modFeatures.EnableWeapon(czWeapons[i], true);
 	}

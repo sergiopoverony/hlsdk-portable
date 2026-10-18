@@ -34,13 +34,29 @@ public:
 	int ObjectCaps() { return CBaseAnimating::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
 	static TYPEDESCRIPTION m_SaveData[];
 	void EXPORT AnimThink();
+	void Settle();
+	void PlayAnim(const char *name);
+	void React(int type);
+	const char *IdleName();
 
 	int m_head;
+	int m_bMade;
+	int m_react;
+	int m_step;
+	float m_stepTime;
+	EHANDLE m_hPlat;
+	Vector m_platOfs;
 };
 
 TYPEDESCRIPTION CCzSoldier::m_SaveData[] =
 {
 	DEFINE_FIELD(CCzSoldier, m_head, FIELD_INTEGER),
+	DEFINE_FIELD(CCzSoldier, m_bMade, FIELD_INTEGER),
+	DEFINE_FIELD(CCzSoldier, m_react, FIELD_INTEGER),
+	DEFINE_FIELD(CCzSoldier, m_step, FIELD_INTEGER),
+	DEFINE_FIELD(CCzSoldier, m_stepTime, FIELD_TIME),
+	DEFINE_FIELD(CCzSoldier, m_hPlat, FIELD_EHANDLE),
+	DEFINE_FIELD(CCzSoldier, m_platOfs, FIELD_VECTOR),
 };
 
 IMPLEMENT_SAVERESTORE(CCzSoldier, CBaseAnimating)
@@ -202,6 +218,10 @@ void CCzSoldier::Precache()
 {
 	PRECACHE_MODEL("models/seal.mdl");
 	PRECACHE_MODEL("models/terror.mdl");
+	PRECACHE_SOUND("ct/ct_blinded_am.wav");
+	PRECACHE_SOUND("ct/ct_incoming_am.wav");
+	PRECACHE_SOUND("ct/ct_damnsmoke_am.wav");
+	PRECACHE_SOUND("t/t_coughc_am.wav");
 }
 
 void CCzSoldier::Spawn()
@@ -214,16 +234,20 @@ void CCzSoldier::Spawn()
 	pev->model = MAKE_STRING(mdl);
 	SET_MODEL(ENT(pev), mdl);
 
+	m_bMade = pev->iuser4 == 0x435A; // set by the monstermaker
 	pev->movetype = MOVETYPE_NONE;
-	pev->solid = SOLID_SLIDEBOX;
+	pev->solid = m_bMade ? SOLID_NOT : SOLID_SLIDEBOX;
 	pev->takedamage = DAMAGE_NO;
 	pev->health = 100;
 	pev->skin = (!isTerror && strstr(cls, "_swat_")) ? 3 : 0;
 
 	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
 	UTIL_SetOrigin(pev, pev->origin);
-	pev->origin.z += 1;
-	DROP_TO_FLOOR(ENT(pev));
+	if (!m_bMade)
+	{
+		pev->origin.z += 1;
+		DROP_TO_FLOOR(ENT(pev));
+	}
 
 	InitBoneControllers();
 
@@ -255,18 +279,179 @@ void CCzSoldier::Spawn()
 	pev->frame = 0;
 	ResetSequenceInfo();
 
+	m_react = 0;
+	Settle();
 	SetThink(&CCzSoldier::AnimThink);
 	pev->nextthink = gpGlobals->time + 0.1f;
+}
+
+static cvar_t cz_cage_drop = { "cz_cage_drop", "100", 0, 100.0f, nullptr };
+static cvar_t cz_grenade_react = { "cz_grenade_react_radius", "250", 0, 250.0f, nullptr };
+
+// cage soldier: ride the func_door that contains the maker spot
+void CCzSoldier::Settle()
+{
+	m_hPlat = nullptr;
+	if (!m_bMade)
+		return;
+	static bool reg = false;
+	if (!reg)
+	{
+		reg = true;
+		CVAR_REGISTER(&cz_cage_drop);
+		CVAR_REGISTER(&cz_grenade_react);
+	}
+	CBaseEntity *best = nullptr;
+	float bestTop = -99999.0f;
+	CBaseEntity *e = nullptr;
+	while ((e = UTIL_FindEntityByClassname(e, "func_door")) != nullptr)
+	{
+		if (e->pev->targetname && !strncmp(STRING(e->pev->targetname), "gunrange_door", 13))
+			continue;
+		Vector mn = e->pev->absmin, mx = e->pev->absmax;
+		if (pev->origin.x < mn.x - 8 || pev->origin.x > mx.x + 8 || pev->origin.y < mn.y - 8 || pev->origin.y > mx.y + 8)
+			continue;
+		if (pev->origin.z < mn.z - 24 || pev->origin.z > mx.z + 24)
+			continue;
+		if (mx.z > bestTop && mx.z <= pev->origin.z + 24)
+		{
+			bestTop = mx.z;
+			best = e;
+		}
+	}
+	if (best)
+	{
+		m_hPlat = best;
+		m_platOfs = pev->origin - best->pev->origin;
+		ALERT(at_console, "soldier: rides %s (%s) at %.0f %.0f %.0f\n", STRING(best->pev->classname), STRING(best->pev->targetname), pev->origin.x, pev->origin.y, pev->origin.z);
+	}
+	else
+		ALERT(at_console, "soldier: maker spawn at %.0f %.0f %.0f, no door under\n", pev->origin.x, pev->origin.y, pev->origin.z);
+}
+
+const char *CCzSoldier::IdleName()
+{
+	return LookupSequence("idle1") >= 0 ? "idle1" : "combatidle";
+}
+
+void CCzSoldier::PlayAnim(const char *name)
+{
+	int seq = LookupSequence(name);
+	if (seq < 0)
+		return;
+	pev->sequence = seq;
+	pev->frame = 0;
+	ResetSequenceInfo();
+}
+
+void CCzSoldier::React(int type)
+{
+	m_react = type;
+	m_step = 0;
+	if (type == 1)
+	{
+		EMIT_SOUND_DYN(edict(), CHAN_VOICE, "ct/ct_blinded_am.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		PlayAnim("smflinch");
+		m_stepTime = gpGlobals->time + 6.0f;
+	}
+	else
+	{
+		EMIT_SOUND_DYN(edict(), CHAN_VOICE, "ct/ct_incoming_am.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+		PlayAnim("cower");
+		m_stepTime = gpGlobals->time + 2.5f;
+	}
 }
 
 void CCzSoldier::AnimThink()
 {
 	StudioFrameAdvance();
+
+	if (m_react == 1)
+	{
+		if (gpGlobals->time >= m_stepTime)
+		{
+			m_react = 0;
+			PlayAnim(IdleName());
+		}
+		else if (m_fSequenceFinished)
+		{
+			static const char *flinch[] = { "smflinch", "leftarmflinch", "rightarmflinch", "leftlegsmflinch", "rightlegsmflinch" };
+			PlayAnim(flinch[RANDOM_LONG(0, 4)]);
+		}
+	}
+	else if (m_react == 2)
+	{
+		if (m_step == 0 && gpGlobals->time >= m_stepTime)
+		{
+			m_step = 1;
+			EMIT_SOUND_DYN(edict(), CHAN_VOICE, "ct/ct_damnsmoke_am.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+			PlayAnim("choking");
+			m_stepTime = gpGlobals->time + 1.5f;
+		}
+		else if (m_step == 1 && gpGlobals->time >= m_stepTime)
+		{
+			m_step = 2;
+			EMIT_SOUND_DYN(edict(), CHAN_VOICE, "t/t_coughc_am.wav", VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
+			m_stepTime = gpGlobals->time + 2.5f;
+		}
+		else if (m_step == 2 && gpGlobals->time >= m_stepTime)
+		{
+			m_react = 0;
+			PlayAnim(IdleName());
+		}
+	}
+	else if (m_fSequenceFinished && !m_fSequenceLoops)
+	{
+		pev->frame = 0;
+		ResetSequenceInfo();
+	}
+
+	CBaseEntity *plat = m_hPlat;
+	if (plat)
+	{
+		Vector want = plat->pev->origin + m_platOfs;
+		want.z -= cz_cage_drop.value;
+		if ((want - pev->origin).Length() > 0.1f)
+			UTIL_SetOrigin(pev, want);
+		pev->nextthink = gpGlobals->time + 0.02f;
+		return;
+	}
 	pev->nextthink = gpGlobals->time + 0.1f;
 }
 
-// Reaction of soldiers to grenades (kind: 1 flash, 2 smoke) - animations/speech added later
+bool Cz_IsSoldierClass(const char *cls)
+{
+	return cls && (!strncmp(cls, "monster_ct_", 11) || !strncmp(cls, "monster_terrorist_", 18));
+}
+
+// called by CMonsterMaker: create a soldier at the maker's spot, the child shares the maker's netname as targetname
+CBaseEntity *Cz_MakeSoldier(const char *cls, const Vector &origin, const Vector &angles, string_t name)
+{
+	edict_t *pent = CREATE_NAMED_ENTITY(MAKE_STRING(cls));
+	if (FNullEnt(pent))
+		return NULL;
+	entvars_t *pevNew = VARS(pent);
+	pevNew->origin = origin;
+	pevNew->angles = angles;
+	pevNew->iuser4 = 0x435A;
+	if (!FStringNull(name))
+		pevNew->targetname = name;
+	DispatchSpawn(pent);
+	return CBaseEntity::Instance(pent);
+}
+
+// Reaction of soldiers to grenades (kind: 1 flash, 2 smoke)
 void Cz_GrenadeEvent(int kind, const Vector& origin, CBaseEntity* owner)
 {
-	(void)kind; (void)origin; (void)owner;
+	(void)owner;
+	float radius = cz_grenade_react.value > 0 ? cz_grenade_react.value : 250.0f;
+	CBaseEntity *e = NULL;
+	while ((e = UTIL_FindEntityInSphere(e, origin, radius)) != NULL)
+	{
+		if (!Cz_IsSoldierClass(STRING(e->pev->classname)))
+			continue;
+		CCzSoldier *sol = (CCzSoldier *)e;
+		if (sol->m_bMade)
+			sol->React(kind);
+	}
 }

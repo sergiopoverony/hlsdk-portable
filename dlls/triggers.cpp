@@ -7987,6 +7987,24 @@ public:
 			pev->message = ALLOC_STRING(pkvd->szValue);
 			pkvd->fHandled = true;
 		}
+		else if (FStrEq(pkvd->szKeyName, "toolset"))
+		{
+			// CZ tool bits: 4 camera, 8 fiber optic camera, 16 radio, 32 radio controlled bomb, 64 blowtorch
+			const int bits = atoi(pkvd->szValue);
+			const char* name = nullptr;
+			if (bits & 32) name = "weapon_radiocontrolledbomb";
+			else if (bits & 64) name = "weapon_blowtorch";
+			else if (bits & 16) name = "weapon_radio";
+			else if (bits & 4) name = "weapon_camera";
+			if (name && FStringNull(pev->netname))
+				pev->netname = ALLOC_STRING(name);
+			pkvd->fHandled = true;
+		}
+		else if (FStrEq(pkvd->szKeyName, "rcbombtarget") || FStrEq(pkvd->szKeyName, "bombdefusetime"))
+		{
+			pev->noise = ALLOC_STRING(pkvd->szValue);
+			pkvd->fHandled = true;
+		}
 		else
 			CBaseTrigger::KeyValue(pkvd);
 	}

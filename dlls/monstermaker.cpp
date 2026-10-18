@@ -71,6 +71,9 @@ typedef enum
 //=========================================================
 // MonsterMaker - this ent creates monsters during the game.
 //=========================================================
+extern bool Cz_IsSoldierClass(const char *cls);
+extern CBaseEntity *Cz_MakeSoldier(const char *cls, const Vector &origin, const Vector &angles, string_t name);
+
 class CMonsterMaker : public CBaseMonster
 {
 public:
@@ -80,6 +83,14 @@ public:
 	void Activate() override;
 	void KeyValue( KeyValueData* pkvd) override;
 	void EXPORT ToggleUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+	void EXPORT CzMakeUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
+	{
+		(void)pCaller; (void)useType; (void)value;
+		if (m_cLiveChildren >= (m_cNumMonsters > 0 ? m_cNumMonsters : 1))
+			return;
+		m_cLiveChildren++;
+		Cz_MakeSoldier(STRING(m_iszMonsterClassname), pev->origin, Vector(0, pev->angles.y, 0), pev->netname);
+	}
 	void EXPORT CyclicUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 	void EXPORT MakerThink();
 	void EXPORT CyclicBacklogThink();
@@ -342,6 +353,15 @@ void CMonsterMaker::KeyValue( KeyValueData *pkvd )
 void CMonsterMaker::Spawn()
 {
 	pev->solid = SOLID_NOT;
+
+	if (!FStringNull(m_iszMonsterClassname) && Cz_IsSoldierClass(STRING(m_iszMonsterClassname)))
+	{
+		// CZ soldiers are not CBaseMonster: simple maker, fires once when triggered
+		UTIL_PrecacheOther(STRING(m_iszMonsterClassname));
+		SetUse(&CMonsterMaker::CzMakeUse);
+		SetThink(&CBaseEntity::SUB_DoNothing);
+		return;
+	}
 
 	if (FStringNull(m_iszPlacePosition))
 	{

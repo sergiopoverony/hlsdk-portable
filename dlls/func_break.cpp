@@ -30,6 +30,8 @@
 #include "locus.h"
 #include "common_soundscripts.h"
 #include "error_collector.h"
+#include "weapons.h"
+#include "player.h"
 
 extern DLL_GLOBAL Vector	g_vecAttackDir;
 
@@ -196,6 +198,12 @@ void CBreakable::KeyValue( KeyValueData* pkvd )
 	else if( FStrEq( pkvd->szKeyName, "damagetype" ) )
 	{
 		m_bitsDamageInflict = atoi( pkvd->szValue );
+		pkvd->fHandled = true;
+	}
+	else if( FStrEq( pkvd->szKeyName, "onlydamagedby" ) )
+	{
+		// CZ: 1 - only the blowtorch, 2 - only the radio controlled bomb (broken by Use)
+		pev->iuser4 = FStrEq( pkvd->szValue, "weapon_blowtorch" ) ? 1 : ( FStrEq( pkvd->szValue, "weapon_radiocontrolledbomb" ) ? 2 : 3 );
 		pkvd->fHandled = true;
 	}
 	else
@@ -705,6 +713,16 @@ TakeDamageResult CBreakable::TakeDamage( entvars_t *pevInflictor, entvars_t *pev
 		return takeDamageResult;
 	if ((pev->spawnflags & SF_BREAK_OP4MORTAR_ONLY) && !FClassnameIs(pevInflictor, "mortar_shell"))
 		return takeDamageResult;
+
+	if (pev->iuser4 == 2 || pev->iuser4 == 3)
+		return takeDamageResult;
+	if (pev->iuser4 == 1)
+	{
+		CBaseEntity* pAtt = pevAttacker ? CBaseEntity::Instance(pevAttacker) : nullptr;
+		CBasePlayer* pPl = (pAtt && pAtt->IsPlayer()) ? (CBasePlayer*)pAtt : nullptr;
+		if (!pPl || !pPl->m_pActiveItem || pPl->m_pActiveItem->WeaponId() != WEAPON_BTORCH)
+			return takeDamageResult;
+	}
 
 	DamageInfo damageInfo = TransformDamageInfo(pevInflictor, pevAttacker, inputDamageInfo);
 	if (damageInfo.mustSkip)

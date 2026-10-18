@@ -314,6 +314,7 @@ void RegisterAmmoTypes()
 	g_AmmoRegistry.Register("HEGrenade", 1);
 	g_AmmoRegistry.Register("Flashbang", 2);
 	g_AmmoRegistry.Register("SmokeGrenade", 1);
+	g_AmmoRegistry.Register("RCBomb", 5);
 	g_AmmoRegistry.Register("338magnum", 30);
 	g_AmmoRegistry.Register("57mm", 200);
 	g_AmmoRegistry.Register("nails", 200);

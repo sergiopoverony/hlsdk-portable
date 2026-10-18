@@ -6,6 +6,9 @@
 #include "skill.h"
 #include "weapons.h"
 #include "player.h"
+#if !CLIENT_DLL
+#include "explode.h"
+#endif
 
 enum czusp_e
 {
@@ -474,3 +477,285 @@ LINK_WEAPON_TO_CLASS(NAME, CLS)
 CZ_GRENADE_CLASS(CCzHeGrenade, WEAPON_HEGRENADE, 0, weapon_hegrenade, "HEGrenade", 1, "hegrenade", "cz he")
 CZ_GRENADE_CLASS(CCzFlashbang, WEAPON_FLASHBANG, 1, weapon_flashbang, "Flashbang", 2, "flashbang", "cz flashbang")
 CZ_GRENADE_CLASS(CCzSmokeGrenade, WEAPON_SMOKEGRENADE, 2, weapon_smokegrenade, "SmokeGrenade", 1, "smokegrenade", "cz smoke")
+
+
+// ---------------------------------------------------------------------------------------------
+// Radio controlled stick-on bomb (train02). One model v_rcontrolbomb.mdl holds both the bomb and the detonator.
+//   0 idle bomb, 1 idle detonator, 2 draw bomb, 3 draw detonator, 4 holster bomb, 5 holster detonator, 6 plant, 7 detonate
+// Attack1 in the tool zone plants the bomb, then Attack1 with the detonator blows it up. Attack2 swaps bomb <-> detonator.
+// ---------------------------------------------------------------------------------------------
+enum czrc_e { RC_IDLE_BOMB, RC_IDLE_DET, RC_DRAW_BOMB, RC_DRAW_DET, RC_HOLSTER_BOMB, RC_HOLSTER_DET, RC_PLANT, RC_DETONATE };
+
+#if !CLIENT_DLL
+class CCzRcPlanted : public CBaseAnimating
+{
+public:
+	void Spawn() override
+	{
+		PRECACHE_MODEL("models/w_rcontrolbomb_bomb.mdl");
+		SET_MODEL(ENT(pev), "models/w_rcontrolbomb_bomb.mdl");
+		pev->movetype = MOVETYPE_NONE;
+		pev->solid = SOLID_NOT;
+		UTIL_SetOrigin(pev, pev->origin);
+	}
+	void Precache() override { PRECACHE_MODEL("models/w_rcontrolbomb_bomb.mdl"); }
+	int ObjectCaps() override { return CBaseAnimating::ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+};
+LINK_ENTITY_TO_CLASS(cz_rc_planted, CCzRcPlanted)
+#endif
+
+class CCzRcBomb : public CBasePlayerWeapon
+{
+public:
+#if !CLIENT_DLL
+	int Save(CSave &save) override;
+	int Restore(CRestore &restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+#endif
+	int WeaponId() const override { return WEAPON_RCBOMB; }
+	bool GetItemInfo(ItemInfo *p) override { p->iSlot = 4; p->iPosition = 2; p->iFlags = ITEM_FLAG_SELECTONEMPTY; return true; }
+	WeaponParameters GetDefaultParameters() const override
+	{
+		WeaponParameters params;
+		params.initialAmmoAmount = 5;
+		params.maxClip = WEAPON_NOCLIP;
+		params.ammoName = "RCBomb";
+		params.worldModel = "models/w_rcontrolbomb.mdl";
+		params.viewModel = "models/v_rcontrolbomb.mdl";
+		params.playerAnimExt = "trip";
+		params.priority = -10;
+		params.toolIcon = "icon_radiocontrolledbomb";
+		return params;
+	}
+	void Spawn() override
+	{
+		Precache();
+		SetMyModel();
+		SetInitialAmmoAmount();
+		InitMaxClip();
+		FallInit();
+		SetWorldModelProps();
+	}
+	void Precache() override
+	{
+		PrecacheWeaponModels();
+		PrecacheModelSounds();
+#if !CLIENT_DLL
+		PRECACHE_MODEL("models/w_rcontrolbomb_bomb.mdl");
+		PRECACHE_MODEL("sprites/zerogxplode.spr");
+		UTIL_PrecacheOther("cz_rc_planted");
+#endif
+	}
+	bool AddToPlayer(CBasePlayer *pPlayer) override
+	{
+		bool r = CBasePlayerWeapon::AddToPlayer(pPlayer);
+		m_rcMode = 0; m_rcPhase = 0; m_rcPlanted = 0;
+		return r;
+	}
+	bool CanDeploy() override { return m_rcPlanted || CBasePlayerWeapon::CanDeploy(); }
+	bool IsUseable() override { return CanDeploy(); }
+	bool CanBeDropped() override { return false; }
+	bool Deploy() override
+	{
+		const WeaponParameters& params = MyParameters();
+		m_rcPhase = 0;
+		m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.0f;
+		bool r = DefaultDeploy(ViewModelToDeploy(params.ViewModel()), params.PlayerModel(), m_rcMode ? RC_DRAW_DET : RC_DRAW_BOMB, params.playerAnimExt.c_str());
+		if (r)
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5f;
+		return r;
+	}
+	void Holster() override
+	{
+		m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5f;
+		SendWeaponAnim(m_rcMode ? RC_HOLSTER_DET : RC_HOLSTER_BOMB);
+		m_rcPhase = 0;
+	}
+	bool InZone()
+	{
+		const int ti = MyParameters().toolIndex;
+		return ti >= 0 && FBitSet(m_pPlayer->m_ToolStateBits, 1 << ti);
+	}
+	void PrimaryAttack() override
+	{
+		if (m_rcPhase != 0)
+			return;
+		if (m_rcMode == 0)
+		{
+			if (m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] <= 0 || !InZone())
+			{
+				m_flNextPrimaryAttack = GetNextAttackDelay(0.5f);
+				return;
+			}
+			SendWeaponAnim(RC_PLANT);
+			m_pPlayer->SetAnimation(PLAYER_ATTACK1);
+			m_rcPhase = 1;
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.07f;
+			m_flNextPrimaryAttack = GetNextAttackDelay(3.0f);
+			m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 3.0f;
+		}
+		else
+		{
+			SendWeaponAnim(RC_DETONATE);
+			m_pPlayer->SetAnimation(PLAYER_ATTACK1);
+			m_rcPhase = 3;
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5f;
+			m_flNextPrimaryAttack = GetNextAttackDelay(3.5f);
+			m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 3.5f;
+		}
+	}
+	void SecondaryAttack() override
+	{
+		if (m_rcPhase != 0)
+			return;
+		if (m_rcMode == 0 && m_rcPlanted == 0 && m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] <= 0)
+			return;
+		SendWeaponAnim(m_rcMode ? RC_HOLSTER_DET : RC_HOLSTER_BOMB);
+		m_rcPhase = 5;
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.7f;
+		m_flNextPrimaryAttack = GetNextAttackDelay(1.7f);
+		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 1.7f;
+	}
+	void WeaponIdle() override
+	{
+		if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
+			return;
+		switch (m_rcPhase)
+		{
+		case 1: // the bomb is stuck on the target now
+			if (!InZone())
+			{
+				// the player walked away during the animation: nothing is planted
+				m_rcPhase = 0;
+				SendWeaponAnim(RC_IDLE_BOMB);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 2.0f;
+				return;
+			}
+#if !CLIENT_DLL
+			PlantBomb();
+#endif
+			m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()]--;
+			m_rcPlanted = 1;
+			m_rcMode = 1;
+			m_rcPhase = 2;
+			SendWeaponAnim(RC_DRAW_DET);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.33f;
+			return;
+		case 2:
+			m_rcPhase = 0;
+			SendWeaponAnim(RC_IDLE_DET);
+			break;
+		case 3: // put the detonator away, the bang follows
+			m_rcPhase = 4;
+			SendWeaponAnim(RC_HOLSTER_DET);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.13f;
+			return;
+		case 4:
+#if !CLIENT_DLL
+			DetonateBombs();
+#endif
+			m_rcPlanted = 0;
+			m_rcPhase = 6;
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0f;
+			return;
+		case 5: // swap bomb <-> detonator
+			m_rcMode ^= 1;
+			m_rcPhase = 0;
+			SendWeaponAnim(m_rcMode ? RC_DRAW_DET : RC_DRAW_BOMB);
+			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.0f;
+			return;
+		case 6: // after the explosion take the next bomb out
+			m_rcPhase = 0;
+			m_rcMode = 0;
+			if (m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] > 0)
+			{
+				SendWeaponAnim(RC_DRAW_BOMB);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5f;
+			}
+			else
+			{
+				SendWeaponAnim(RC_IDLE_BOMB);
+				m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 5.0f;
+			}
+			return;
+		default:
+			SendWeaponAnim(m_rcMode ? RC_IDLE_DET : RC_IDLE_BOMB);
+			break;
+		}
+		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + UTIL_SharedRandomFloat(m_pPlayer->random_seed, 10, 15);
+	}
+	void GetWeaponData(weapon_data_t& data) override
+	{
+		data.iuser1 = m_rcMode;
+		data.iuser2 = m_rcPhase;
+		data.iuser3 = m_rcPlanted;
+	}
+	void SetWeaponData(const weapon_data_t& data) override
+	{
+		m_rcMode = data.iuser1;
+		m_rcPhase = data.iuser2;
+		m_rcPlanted = data.iuser3;
+	}
+
+#if !CLIENT_DLL
+	void PlantBomb()
+	{
+		const int ti = MyParameters().toolIndex;
+		CBaseEntity* zone = ti >= 0 ? CBaseEntity::OwnInstance(m_pPlayer->m_UseToolTriggers[ti]) : nullptr;
+		Vector pos = m_pPlayer->pev->origin + gpGlobals->v_forward * 32.0f;
+		Vector ang = g_vecZero;
+		if (zone && !FStringNull(zone->pev->noise))
+		{
+			CBaseEntity* guide = UTIL_FindEntityByTargetname(nullptr, STRING(zone->pev->noise));
+			if (guide)
+			{
+				pos = guide->pev->origin;
+				ang = guide->pev->angles;
+				guide->pev->effects |= EF_NODRAW;
+			}
+		}
+		CBaseEntity::Create("cz_rc_planted", pos, ang, m_pPlayer->edict());
+		if (zone)
+			zone->Use(m_pPlayer, m_pPlayer, USE_TOGGLE, 0.0f);
+	}
+	void DetonateBombs()
+	{
+		CBaseEntity* e = nullptr;
+		while ((e = UTIL_FindEntityByClassname(e, "cz_rc_planted")) != nullptr)
+		{
+			ExplosionCreate(e->pev->origin, e->pev->angles, m_pPlayer->edict(), 60, false);
+			UTIL_ScreenShake(e->pev->origin, 8.0f, 150.0f, 1.5f, 400.0f);
+			UTIL_Remove(e);
+		}
+		// the shields that only the bomb can break
+		CBaseEntity* b = nullptr;
+		while ((b = UTIL_FindEntityByClassname(b, "func_breakable")) != nullptr)
+		{
+			if (b->pev->iuser4 == 2)
+				b->Use(m_pPlayer, m_pPlayer, USE_TOGGLE, 0.0f);
+		}
+		CBaseEntity* g = nullptr;
+		while ((g = UTIL_FindEntityByClassname(g, "item_generic")) != nullptr)
+		{
+			if (g->pev->model && strstr(STRING(g->pev->model), "rcontrolbomb_indicator"))
+				UTIL_Remove(g);
+		}
+	}
+#endif
+
+	int m_rcMode;
+	int m_rcPhase;
+	int m_rcPlanted;
+};
+
+#if !CLIENT_DLL
+TYPEDESCRIPTION CCzRcBomb::m_SaveData[] =
+{
+	DEFINE_FIELD(CCzRcBomb, m_rcMode, FIELD_INTEGER),
+	DEFINE_FIELD(CCzRcBomb, m_rcPhase, FIELD_INTEGER),
+	DEFINE_FIELD(CCzRcBomb, m_rcPlanted, FIELD_INTEGER),
+};
+IMPLEMENT_SAVERESTORE(CCzRcBomb, CBasePlayerWeapon)
+#endif
+
+LINK_WEAPON_TO_CLASS(weapon_radiocontrolledbomb, CCzRcBomb)
