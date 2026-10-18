@@ -1,12 +1,12 @@
 // CZ:DS: client-side "#KEY" localization (titles.txt entries like "#valve_game_saved")
-#include "hud.h"
-#include "cl_util.h"
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <string>
 #include <map>
 #include <vector>
+#include "hud.h"
+#include "cl_util.h"
 
 static std::map<std::string, std::string> g_czLoc;
 static bool g_czLocLoaded = false;
