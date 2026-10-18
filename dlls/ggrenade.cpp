@@ -62,6 +62,15 @@ const NamedSoundScript CGrenade::bounceSoundScript = {
 const NamedVisual CGrenade::handGrenadeVisual = BuildVisual("HandGrenade.Model")
 		.Model("models/w_grenade.mdl");
 
+const NamedVisual CGrenade::czHeVisual = BuildVisual("CzHE.Model")
+		.Model("models/w_hegrenade.mdl");
+
+const NamedVisual CGrenade::czFlashVisual = BuildVisual("CzFlash.Model")
+		.Model("models/w_flashbang.mdl");
+
+const NamedVisual CGrenade::czSmokeVisual = BuildVisual("CzSmoke.Model")
+		.Model("models/w_smokegrenade.mdl");
+
 const NamedVisual CGrenade::arGrenadeVisual = BuildVisual("ARGrenade.Model")
 		.Model("models/grenade.mdl");
 
@@ -375,7 +384,13 @@ void CGrenade::Spawn()
 
 	pev->solid = SOLID_BBOX;
 
-	if (m_isTimed)
+	if (m_czKind == CZ_FLASH)
+		ApplyVisualWithOwn(GetVisual(czFlashVisual));
+	else if (m_czKind == CZ_SMOKE)
+		ApplyVisualWithOwn(GetVisual(czSmokeVisual));
+	else if (m_czKind == CZ_HE)
+		ApplyVisualWithOwn(GetVisual(czHeVisual));
+	else if (m_isTimed)
 		ApplyVisualWithOwn(GetVisual(handGrenadeVisual));
 	else
 		ApplyVisualWithOwn(GetVisual(arGrenadeVisual));
@@ -389,9 +404,13 @@ void CGrenade::Precache()
 	PrecacheBaseGrenadeSounds();
 	PRECACHE_SOUND("weapons/flashbang-1.wav");
 	PRECACHE_SOUND("weapons/sg_explode.wav");
+	PRECACHE_MODEL("sprites/gas_puff_01.spr");
 	RegisterAndPrecacheSoundScript(bounceSoundScript);
 
 	RegisterVisualAsMineOwn(handGrenadeVisual);
+	RegisterVisualAsMineOwn(czHeVisual);
+	RegisterVisualAsMineOwn(czFlashVisual);
+	RegisterVisualAsMineOwn(czSmokeVisual);
 	RegisterVisualAsMineOwn(arGrenadeVisual);
 }
 
@@ -422,7 +441,7 @@ DamageInfo CGrenade::GetDefaultProjectileDirectDamageInfo()
 void CGrenade::SetProjectileParamsBeforeSpawn(const ProjectileParameters& params)
 {
 	m_czKind = params.variant;
-	m_isTimed = params.variant == TIMED || params.variant == CZ_FLASH || params.variant == CZ_SMOKE;
+	m_isTimed = params.variant == TIMED || params.variant == CZ_HE || params.variant == CZ_FLASH || params.variant == CZ_SMOKE;
 	SetProjectileParamsBeforeSpawnImpl(params);
 }
 
@@ -446,7 +465,20 @@ void CGrenade::LaunchAsProjectile(const ProjectileParameters& params)
 	}
 	else
 	{
-		LaunchAsProjectileImpl(600.0f, params);
+		float czSpeed = 600.0f;
+		if (m_czKind >= CZ_HE)
+		{
+			// CS throw: speed depends on pitch
+			float pitch = -asinf(params.direction.z) * 180.0f / M_PI;
+			if (pitch < 0)
+				pitch = -10.0f + pitch * (80.0f / 90.0f);
+			else
+				pitch = -10.0f + pitch * (100.0f / 90.0f);
+			czSpeed = (90.0f - pitch) * 4.0f;
+			if (czSpeed > 500.0f)
+				czSpeed = 500.0f;
+		}
+		LaunchAsProjectileImpl(czSpeed, params);
 		SetMyProjectileEffectFlags();
 
 		SetTouch( &CGrenade::BounceTouch );	// Bounce if touched
@@ -469,6 +501,13 @@ void CGrenade::LaunchAsProjectile(const ProjectileParameters& params)
 
 		pev->gravity = 0.5f;
 		pev->friction = 0.8f;
+		if (m_czKind >= CZ_HE)
+		{
+			pev->gravity = 0.55f;
+			pev->friction = 0.7f;
+			pev->avelocity = Vector(RANDOM_FLOAT(-500, -100), 0, 0);
+			pev->sequence = 0;
+		}
 	}
 }
 
@@ -729,18 +768,25 @@ void CGrenade::CzSmokeThink()
 		UTIL_Remove(this);
 		return;
 	}
-	for (int i = 0; i < 4; i++)
+	// white soft cloud: puffs are spawned during the first 3 seconds, then they fade out by themselves
+	if (m_czSmokeEnd - gpGlobals->time > 15.0f)
 	{
-		Vector p = pev->origin + Vector(RANDOM_FLOAT(-60, 60), RANDOM_FLOAT(-60, 60), RANDOM_FLOAT(0, 50));
-		MESSAGE_BEGIN(MSG_PVS, SVC_TEMPENTITY, p);
-			WRITE_BYTE(TE_SMOKE);
-			WRITE_COORD(p.x);
-			WRITE_COORD(p.y);
-			WRITE_COORD(p.z);
-			WRITE_SHORT(g_sModelIndexSmoke);
-			WRITE_BYTE(60);
-			WRITE_BYTE(6);
-		MESSAGE_END();
+		for (int i = 0; i < 3; i++)
+		{
+			Vector p = pev->origin + Vector(RANDOM_FLOAT(-90, 90), RANDOM_FLOAT(-90, 90), RANDOM_FLOAT(10, 70));
+			CSprite* pSprite = CSprite::SpriteCreate("sprites/gas_puff_01.spr", p);
+			if (pSprite)
+			{
+				pSprite->pev->spawnflags |= SF_SPRITE_TEMPORARY;
+				pSprite->SetTransparency(kRenderTransAlpha, 235, 235, 235, 190, 0);
+				pSprite->SetScale(RANDOM_FLOAT(2.5f, 3.5f));
+				pSprite->pev->frame = RANDOM_LONG(0, 1);
+				pSprite->pev->angles.z = RANDOM_FLOAT(0, 360);
+				pSprite->pev->velocity = Vector(RANDOM_FLOAT(-6, 6), RANDOM_FLOAT(-6, 6), RANDOM_FLOAT(2, 8));
+				pSprite->pev->movetype = MOVETYPE_NOCLIP;
+				pSprite->Expand(1.0f, 12.0f);
+			}
+		}
 	}
-	pev->nextthink = gpGlobals->time + 0.5f;
+	pev->nextthink = gpGlobals->time + 0.25f;
 }

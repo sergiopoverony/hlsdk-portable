@@ -13,6 +13,7 @@ public:
 	{
 		CONTACT,
 		TIMED,
+		CZ_HE,
 		CZ_FLASH,
 		CZ_SMOKE
 	};
@@ -73,6 +74,9 @@ public:
 	static const NamedSoundScript bounceSoundScript;
 
 	static const NamedVisual handGrenadeVisual;
+	static const NamedVisual czHeVisual;
+	static const NamedVisual czFlashVisual;
+	static const NamedVisual czSmokeVisual;
 	static const NamedVisual arGrenadeVisual;
 };
 

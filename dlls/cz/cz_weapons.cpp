@@ -471,6 +471,6 @@ public: \
 }; \
 LINK_WEAPON_TO_CLASS(NAME, CLS)
 
-CZ_GRENADE_CLASS(CCzHeGrenade, WEAPON_HEGRENADE, 0, weapon_hegrenade, "HEGrenade", 1, "hegrenade", "hand grenade")
+CZ_GRENADE_CLASS(CCzHeGrenade, WEAPON_HEGRENADE, 0, weapon_hegrenade, "HEGrenade", 1, "hegrenade", "cz he")
 CZ_GRENADE_CLASS(CCzFlashbang, WEAPON_FLASHBANG, 1, weapon_flashbang, "Flashbang", 2, "flashbang", "cz flashbang")
 CZ_GRENADE_CLASS(CCzSmokeGrenade, WEAPON_SMOKEGRENADE, 2, weapon_smokegrenade, "SmokeGrenade", 1, "smokegrenade", "cz smoke")
