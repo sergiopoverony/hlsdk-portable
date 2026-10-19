@@ -60,6 +60,7 @@ public:
 	bool m_fRegisteredSound;// whether or not this grenade has issued its DANGER sound to the world sound list yet.
 	bool m_isTimed;
 	int m_czKind;
+	int m_iBounceCount = 0;
 	void CzFlashExplode();
 	void CzSmokeExplode();
 	void EXPORT CzSmokeThink();

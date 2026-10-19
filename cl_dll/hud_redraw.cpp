@@ -180,6 +180,7 @@ int CHud::Redraw( float flTime, int intermission )
 		}
 	}
 	m_Nightvision.Draw( flTime );
+	{ extern void CZ_DrawScopeOverlay(); if( !intermission ) CZ_DrawScopeOverlay(); }
 
 	// are we in demo mode? do we need to draw the logo in the top corner?
 	if( m_iLogo )

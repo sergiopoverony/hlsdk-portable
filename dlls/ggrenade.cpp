@@ -254,6 +254,42 @@ void CGrenade::BounceTouch( CBaseEntity *pOther )
 	if( pOther->edict() == pev->owner )
 		return;
 
+	if( m_czKind >= CZ_HE )
+	{
+		// Counter-Strike CGrenade::BounceTouch (ReGameDLL): no impact damage
+		if( FClassnameIs( pOther->pev, "func_breakable" ) && pOther->pev->rendermode != kRenderNormal )
+		{
+			pev->velocity = pev->velocity * -2.0f;
+			return;
+		}
+
+		if( pev->flags & FL_ONGROUND )
+		{
+			// add a bit of static friction
+			pev->velocity = pev->velocity * 0.8f;
+		}
+		else
+		{
+			if( m_iBounceCount < 5 )
+				BounceSound();
+
+			if( m_iBounceCount >= 10 )
+			{
+				pev->groundentity = ENT( 0 );
+				pev->flags |= FL_ONGROUND;
+				pev->velocity = g_vecZero;
+			}
+			m_iBounceCount++;
+		}
+
+		pev->framerate = pev->velocity.Length() / 200.0f;
+		if( pev->framerate > 1.0f )
+			pev->framerate = 1.0f;
+		else if( pev->framerate < 0.5f )
+			pev->framerate = 0.0f;
+		return;
+	}
+
 	// only do damage if we're moving fairly fast
 	if( m_flNextAttack < gpGlobals->time && pev->velocity.IsLengthGreaterThan(100) )
 	{
@@ -505,8 +541,10 @@ void CGrenade::LaunchAsProjectile(const ProjectileParameters& params)
 		{
 			pev->gravity = 0.55f;
 			pev->friction = 0.7f;
-			pev->avelocity = Vector(RANDOM_FLOAT(-500, -100), 0, 0);
-			pev->sequence = 0;
+			m_iBounceCount = 0;
+			pev->sequence = RANDOM_LONG( 3, 6 );
+			ResetSequenceInfo();
+			pev->framerate = 1.0f;
 		}
 	}
 }

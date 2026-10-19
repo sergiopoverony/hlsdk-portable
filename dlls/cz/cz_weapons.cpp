@@ -443,7 +443,7 @@ static WeaponParameters CzGrenadeParams(const char* ammo, int maxCarry, const ch
 	params.fire.cycleTime = 0.5f;
 	params.fire.idleDelay = 0.5f;
 	params.fire.chargeAnims = {1};
-	params.fire.chargeTime = 1.0f;
+	params.fire.chargeTime = 0.5f;
 	params.fire.allowHolsterDuringCharge = false;
 	params.fire.chargeEachFire = true;
 	params.fire.cooldownAnims = {3};

@@ -32,10 +32,6 @@ static void CzCrosshair_Init()
 	cz_scope_line = CVAR_CREATE( "cz_scope_line", "1", FCVAR_ARCHIVE );
 }
 
-static bool CzIsSniper( int id )
-{
-	return id == WEAPON_AWP;
-}
 
 // minGap/deltaGap per weapon, values taken from cs16-client GetCrosshairGap
 static void CzGapParams( int id, float &minGap, float &deltaGap, bool &rifle )
@@ -171,11 +167,22 @@ void CZ_DrawCrosshair( float time, WEAPON *pw )
 	if( gEngfuncs.IsSpectateOnly() )
 		return;
 
-	// sniper scope
-	if( CzIsSniper( pw->iId ) && gHUD.m_iFOV <= 40 )
+	// zoomed (AUG etc): sprite crosshair from weapon_*.txt (zoom), no dynamic lines.
+	// Sniper scope (FOV <= 40) is drawn by CZ_DrawScopeOverlay, so no crosshair here.
+	if( gHUD.m_iFOV <= 40 )
 	{
-		CzDrawScope();
+		wrect_t n = { 0, 0, 0, 0 };
+		gEngfuncs.pfnSetCrosshair( 0, n, 0, 0, 0 );
 		return;
+	}
+	if( gHUD.m_iFOV < 90 && pw->hZoomedCrosshair )
+	{
+		gEngfuncs.pfnSetCrosshair( pw->hZoomedCrosshair, pw->rcZoomedCrosshair, 255, 255, 255 );
+		return;
+	}
+	{
+		wrect_t n = { 0, 0, 0, 0 };
+		gEngfuncs.pfnSetCrosshair( 0, n, 0, 0, 0 );
 	}
 
 	if( !cz_xhair->value )
@@ -208,4 +215,21 @@ void CZ_DrawCrosshair( float time, WEAPON *pw )
 	Fill( cx + gap, cy - t2, length, thick, r, g, b, a );
 	if( cz_xhair_dot->value )
 		Fill( cx - t2, cy - t2, thick, thick, r, g, b, a );
+}
+
+// Called from CHud::Redraw every frame, independent of the ammo HUD element.
+void CZ_DrawScopeOverlay()
+{
+	CzCrosshair_Init();
+	if( gHUD.m_iFOV > 40 || gHUD.m_fPlayerDead || gEngfuncs.IsSpectateOnly() )
+		return;
+	if( gHUD.m_iFOV <= 0 )
+		return;
+	static int s_logged = 0;
+	if( !s_logged )
+	{
+		s_logged = 1;
+		gEngfuncs.Con_DPrintf( "CZ scope overlay: fov %d\n", gHUD.m_iFOV );
+	}
+	CzDrawScope();
 }
