@@ -729,6 +729,19 @@ void CBaseMonster :: MonsterThink ( void )
 	pev->nextthink = gpGlobals->time + 0.1;// keep monster thinking.
 	HealthUpdate();
 
+	// czeror test 11.11: monsters made by monstermakers in cz_recoil2 came with the light multiplier
+	// render effect but a zero multiplier and were drawn black. Find who does it, draw them lit.
+	if ( pev->renderfx == kRenderFxLightMultiplier && pev->iuser4 <= 0 )
+	{
+		int value = (int)CVAR_GET_FLOAT( "lightmultiplier" );
+		ALERT( at_console, "lightmultiplier: %s '%s' had renderfx %d with iuser4 %d, cvar %d\n", STRING( pev->classname ),
+			STRING( pev->targetname ), pev->renderfx, pev->iuser4, value );
+		if ( value > 0 )
+			pev->iuser4 = value;
+		else
+			pev->renderfx = kRenderFxNone;
+	}
+
 	RunAI();
 
 	float flInterval = StudioFrameAdvance( ); // animate
