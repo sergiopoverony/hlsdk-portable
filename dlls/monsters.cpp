@@ -734,8 +734,13 @@ void CBaseMonster :: MonsterThink ( void )
 	if ( pev->renderfx == kRenderFxLightMultiplier && pev->iuser4 <= 0 )
 	{
 		int value = (int)CVAR_GET_FLOAT( "lightmultiplier" );
-		ALERT( at_console, "lightmultiplier: %s '%s' had renderfx %d with iuser4 %d, cvar %d\n", STRING( pev->classname ),
-			STRING( pev->targetname ), pev->renderfx, pev->iuser4, value );
+		CWorld *pWorld = (CWorld *)CBaseEntity::Instance( INDEXENT( 0 ) );
+		int worldValue = pWorld ? (int)pWorld->m_lightMultiplier : 0;
+		ALERT( at_console, "lightmultiplier: %s '%s' had renderfx %d with iuser4 %d, cvar %d, world %d\n", STRING( pev->classname ),
+			STRING( pev->targetname ), pev->renderfx, pev->iuser4, value, worldValue );
+		// the map's value, like the monsters placed on the map got it
+		if ( worldValue > 0 )
+			value = worldValue;
 		if ( value > 0 )
 			pev->iuser4 = value;
 		else

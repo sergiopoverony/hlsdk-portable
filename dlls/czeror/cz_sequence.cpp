@@ -251,6 +251,22 @@ int Library::ParseText(const char *text, size_t length, const std::string &fileN
 				}
 			}
 		}
+		else if (op.type != '$' && op.type != '#' && !cur.ops.empty() && (cur.ops.back().type == '#' || cur.ops.back().type == '$'))
+		{
+			// continuation of the previous command after a trailing comma:
+			//	#sound = deltaDialogFirst,
+			//		speaker = delta,
+			//		pause = 4.0
+			std::vector<std::pair<std::string, std::string>> pairs;
+			SplitPairs(line, pairs);
+			for (size_t i = 0; i < pairs.size(); i++)
+			{
+				Pair p;
+				p.key = ToLower(pairs[i].first);
+				p.value = pairs[i].second;
+				cur.ops.back().args.push_back(p);
+			}
+		}
 		else if (op.type == '$' || op.type == '#')
 		{
 			std::string body = line.substr(1);
@@ -361,9 +377,15 @@ void Library::Emit(const RawEntry &raw, Modifiers &state, std::vector<Command> &
 		// '#' command
 		Command c;
 		c.mod = state;
-		// inline modifiers apply only to this command
+		// inline modifiers apply only to this command; an inline "pause" is the wait after it
+		float inlinePause = 0.0f;
 		for (size_t a = 1; a < op.args.size(); a++)
-			ApplyModifier(c.mod, op.args[a].key, op.args[a].value);
+		{
+			if (op.args[a].key == "pause")
+				inlinePause = (float)atof(op.args[a].value.c_str());
+			else
+				ApplyModifier(c.mod, op.args[a].key, op.args[a].value);
+		}
 
 		const std::string &val = op.args.empty() ? std::string() : op.args[0].value;
 
@@ -375,6 +397,9 @@ void Library::Emit(const RawEntry &raw, Modifiers &state, std::vector<Command> &
 		else if (op.key == "repeat") { c.kind = CMD_REPEAT; c.repeat = atoi(val.c_str()); }
 		else if (op.key == "holdtime") { state.holdtime = (float)atof(val.c_str()); continue; }
 		else continue;
+
+		if (c.kind != CMD_PAUSE)
+			c.delay = inlinePause;
 
 		out.push_back(c);
 	}

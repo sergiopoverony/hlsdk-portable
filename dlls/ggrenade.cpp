@@ -482,6 +482,10 @@ void CGrenade::SG_TumbleThink()
 	}
 	if ( gpGlobals->time >= pev->dmgtime && ( pev->flags & FL_ONGROUND ) )
 		SetThink( &CGrenade::SG_Detonate );
+	// czeror test 11.11, cz_recoil kabloom2: a grenade trapped in a solid never gets FL_ONGROUND
+	// (the engine only clears its velocity) and rattled forever; it goes off 2 s after its time
+	else if ( gpGlobals->time >= pev->dmgtime + 2.0f )
+		SetThink( &CGrenade::SG_Detonate );
 	if ( pev->waterlevel )
 	{
 		pev->velocity = pev->velocity * 0.5;
