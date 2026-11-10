@@ -140,7 +140,7 @@ int USENTENCEG_PickSequential( int group, char* found, int pick, int )
 int USEQUENCE_SENTENCEG_Pick( const char* group, char* found )
 {
 	int pick = -1;
-	sentenceEntry_s* sentence = g_engfuncs.pfnSequencePickSentence( group, 0, &pick );
+	sentenceEntry_s* sentence = (sentenceEntry_s *)g_engfuncs.pfnSequencePickSentence( group, 0, &pick );
 	if ( !sentence )
 	{
 		found[0] = 0;

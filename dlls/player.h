@@ -236,7 +236,7 @@ public:
 	void EXPORT PlayerDeathThink();
 	void PlayerUse();
 	void CheckSuitUpdate();
-	void SetSuitUpdate( char* name, int group, int noRepeatTime );
+	void SetSuitUpdate( const char *name, int group, int noRepeatTime );
 	void UpdateGeigerCounter();
 	void CheckTimeBasedDamage();
 	BOOL FBecomeProne() override;

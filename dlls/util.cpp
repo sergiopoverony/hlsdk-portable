@@ -1992,7 +1992,7 @@ void CSave :: WriteFunction( const char *pname, void **data, int count )
 {
 	const char *functionName;
 
-	functionName = NAME_FOR_FUNCTION( (uint32)*data );
+	functionName = NAME_FOR_FUNCTION( *data );
 	if ( functionName )
 		BufferField( pname, strlen(functionName) + 1, functionName );
 	else
@@ -2371,9 +2371,9 @@ int CRestore::ReadField( void *pBaseData, TYPEDESCRIPTION *pFields, int fieldCou
 					break;
 					case FIELD_FUNCTION:
 						if ( strlen( (char *)pInputData ) == 0 )
-							*((int *)pOutputData) = 0;
+							*( (void **)pOutputData ) = 0;
 						else
-							*((int *)pOutputData) = FUNCTION_FROM_NAME( (char *)pInputData );
+							*( (void **)pOutputData ) = (void *)FUNCTION_FROM_NAME( (char *)pInputData );
 					break;
 
 					default:

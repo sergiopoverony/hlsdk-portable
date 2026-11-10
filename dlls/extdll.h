@@ -50,8 +50,12 @@
 typedef uint32 ULONG;
 typedef unsigned char BYTE;
 typedef int BOOL;
+#if !defined( MAX_PATH )
 #define MAX_PATH PATH_MAX
+#endif
 #include <limits.h>
+#include <strings.h>
+#define _stricmp strcasecmp
 #include <stdarg.h>
 #include <string.h> // memset 
 #ifndef max
@@ -70,8 +74,8 @@ typedef int BOOL;
 #include "math.h"
 
 // Header file containing definition of globalvars_t and entvars_t
-typedef unsigned int func_t;					//
-typedef unsigned int string_t;				// from engine's pr_comp.h;
+// func_t and string_t come from const.h (string_t is signed there, MAKE_STRING
+// may give negative offsets on 64-bit platforms)
 typedef float vec_t;				// needed before including progdefs.h
 
 // Vector class

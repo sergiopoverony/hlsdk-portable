@@ -1211,7 +1211,7 @@ TITLECOMMENT gTitleComments[] =
 	{ "cz_turncrank3", "#TURNCRANK_TITLE" }
 };
 
-extern "C" void __cdecl SV_SaveGameComment( char* buffer, int bufferSize )
+extern "C" EXPORT void SV_SaveGameComment( char* buffer, int bufferSize )
 {
 	const char* mapName = STRING( gpGlobals->mapname );
 	const char* title = NULL;

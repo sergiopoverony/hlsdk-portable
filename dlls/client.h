@@ -64,7 +64,7 @@ void		ResetPlayerPVS( edict_t* client, int clientIndex );
 void		MarkEntityInPVS( int clientIndex, int entityIndex, float time, bool inPVS );
 bool		CheckEntityRecentlyInPVS( int clientIndex, int entityIndex, float time );
 bool		CheckPlayerPVSLeafChanged( edict_t* client, int clientIndex );
-extern "C" void __cdecl SV_SaveGameComment( char* buffer, int bufferSize );
+extern "C" EXPORT void SV_SaveGameComment( char* buffer, int bufferSize );
 
 void		LinkUserMessages();
 void		UpdateEntitiesOnClientConnect( edict_t* player );

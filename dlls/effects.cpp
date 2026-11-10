@@ -24,7 +24,7 @@
 #include "shake.h"
 #include "player.h"
 
-extern void PlayMP3Track( unsigned int trackName, int action );
+extern void PlayMP3Track( string_t trackName, int action );
 
 #define	SF_GIBSHOOTER_REPEATABLE	1 // allows a gibshooter to be refired
 

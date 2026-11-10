@@ -1221,7 +1221,7 @@ void CBasePlayer::CheckSuitUpdate()
 	m_flSuitUpdate = gpGlobals->time + 3.5;
 }
 
-void CBasePlayer::SetSuitUpdate( char* name, int group, int noRepeatTime )
+void CBasePlayer::SetSuitUpdate( const char* name, int group, int noRepeatTime )
 {
 	if ( !( pev->weapons & ( 1 << WEAPON_SUIT ) ) || g_pGameRules->IsMultiplayer() )
 		return;

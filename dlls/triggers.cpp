@@ -29,9 +29,9 @@
 #include "gamerules.h"
 #include "triggers.h"
 #include "cdll_dll.h"
-#include "Sequence.h"
-#include "../../dlls/monsters.h"
-#include "../../dlls/soundent.h"
+#include "sequence.h"
+#include "monsters.h"
+#include "soundent.h"
 
 #define	SF_TRIGGER_PUSH_START_OFF	2//spawnflag that makes trigger_push spawn turned OFF
 #define SF_TRIGGER_HURT_TARGETONCE	1// Only fire hurt target once
@@ -3958,13 +3958,13 @@ void CTriggerSequence::Precache()
 
 void CTriggerSequence::Spawn()
 {
-	m_sequenceEntry = g_engfuncs.pfnSequenceGet(NULL, m_sequenceEntryName);
+	m_sequenceEntry = (sequenceEntry_s *)g_engfuncs.pfnSequenceGet(NULL, m_sequenceEntryName);
 }
 
 void CTriggerSequence::Restart()
 {
 	m_nextCommand = NULL;
-	m_sequenceEntry = g_engfuncs.pfnSequenceGet(NULL, m_sequenceEntryName);
+	m_sequenceEntry = (sequenceEntry_s *)g_engfuncs.pfnSequenceGet(NULL, m_sequenceEntryName);
 	m_fastForward = m_isBusy;
 }
 
