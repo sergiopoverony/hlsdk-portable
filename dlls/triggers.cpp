@@ -30,6 +30,8 @@
 #include "triggers.h"
 #include "cdll_dll.h"
 #include "sequence.h"
+#include "czeror/cz_seqapi.h"
+#include "czeror/cz_music.h"
 #include "monsters.h"
 #include "soundent.h"
 
@@ -912,7 +914,7 @@ void PlayMP3Track(string_t trackName, int action)
 		else
 			sprintf(command, "mp3 stop\n");
 		command[sizeof(command) - 1] = 0;
-		CLIENT_COMMAND(pPlayer, command);
+		CZ_MusicCommand(pPlayer, command);
 	}
 }
 
@@ -3958,13 +3960,13 @@ void CTriggerSequence::Precache()
 
 void CTriggerSequence::Spawn()
 {
-	m_sequenceEntry = (sequenceEntry_s *)g_engfuncs.pfnSequenceGet(NULL, m_sequenceEntryName);
+	m_sequenceEntry = CZ_SequenceGet(NULL, m_sequenceEntryName);
 }
 
 void CTriggerSequence::Restart()
 {
 	m_nextCommand = NULL;
-	m_sequenceEntry = (sequenceEntry_s *)g_engfuncs.pfnSequenceGet(NULL, m_sequenceEntryName);
+	m_sequenceEntry = CZ_SequenceGet(NULL, m_sequenceEntryName);
 	m_fastForward = m_isBusy;
 }
 

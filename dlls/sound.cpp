@@ -24,6 +24,7 @@
 #include "talkmonster.h"
 #include "gamerules.h"
 #include "sequence.h"
+#include "czeror/cz_seqapi.h"
 #include "pm_materials.h"
 
 #include <ctype.h>
@@ -143,8 +144,9 @@ int USEQUENCE_SENTENCEG_Pick( const char* group, char* found )
 	sentenceEntry_s* sentence = (sentenceEntry_s *)g_engfuncs.pfnSequencePickSentence( group, 0, &pick );
 	if ( !sentence )
 	{
+		// engines that only stub the sequence API: the sound path of the .seq sentence
 		found[0] = 0;
-		return -1;
+		return CZ_SequencePickSentence( group, found, 64 );
 	}
 	sprintf( found, "#%d", sentence->index );
 	return pick;

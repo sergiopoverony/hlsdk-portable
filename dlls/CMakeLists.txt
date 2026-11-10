@@ -156,6 +156,9 @@ set (SVDLL_SOURCES
 	wpn_usp.cpp
 	wpn_xm1014.cpp
 	wpn_zipline.cpp
+	czeror/cz_music.cpp
+	czeror/cz_seqapi.cpp
+	czeror/cz_sequence.cpp
 	../game_shared/voice_gamemgr.cpp
 	../pm_shared/pm_debug.c
 	../pm_shared/pm_math.c

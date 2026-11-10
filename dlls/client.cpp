@@ -21,6 +21,7 @@
 #include "hostage_localnav.h"
 #include <ctype.h>
 #include "buildslave_assert.h"
+#include "czeror/cz_music.h"
 
 #define ASSERT_FILE BUILDSLAVE_PATH( L"czero\\dlls\\client.cpp" )
 
@@ -286,6 +287,7 @@ void ServerActivate( edict_t* edictList, int edictCount, int clientMax )
 {
 	g_serveractive = 1;
 	CLocalNav::Reset();
+	CZ_MusicReset();
 	for ( int index = 0; index < edictCount; ++index )
 	{
 		edict_t* entity = &edictList[index];

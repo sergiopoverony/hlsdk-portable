@@ -36,6 +36,7 @@
 #include "decals.h"
 #include "triggers.h"
 #include "nodes.h"
+#include "czeror/cz_music.h"
 
 #define HITGROUP_SHIELD		8
 #define PLAYER_HUD_DAMAGE_MASK	0x774118
@@ -2860,6 +2861,7 @@ void CBasePlayer::Killed( entvars_t* attacker, int gib )
 
 void CBasePlayer::PreThink()
 {
+	CZ_MusicPlayerThink( edict() );
 	int changed = pev->button ^ m_afButtonLast;
 	m_afButtonPressed = changed & pev->button;
 	m_afButtonReleased = changed & ~pev->button;
