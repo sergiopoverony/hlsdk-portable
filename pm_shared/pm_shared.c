@@ -3037,7 +3037,15 @@ void PM_PlayerMove ( qboolean server )
 
 	// Handle movement
 	if ( pmove->onground != -1 && ( pmove->cmd.buttons & IN_USE ) )
-		VectorScale( pmove->velocity, 0.3f, pmove->velocity );
+	{
+		// czeror: stock HL scales the velocity by 0.3 on every frame, so the walking speed with
+		// USE held depends on the frame rate (about 34 units per second at 100 fps, 12 at 175).
+		// The scale follows the frame time now: the speed is the one of 100 fps at any rate
+		float scale = 1.0f - 0.7f * pmove->frametime * 100.0f;
+		if ( scale < 0.0f )
+			scale = 0.0f;
+		VectorScale( pmove->velocity, scale, pmove->velocity );
+	}
 
 	switch ( pmove->movetype )
 	{
