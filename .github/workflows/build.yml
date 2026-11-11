@@ -89,12 +89,12 @@ jobs:
         cmake --install build
         echo "client: $(git rev-parse --short HEAD)"
 
-    # while testing the package holds only what changes: no debug files (.pdb)
+    # while testing the package holds only the libraries: no debug and link files
     # and no extras.pk3 of the client (the game folder already has it)
     - name: Strip the package
       shell: bash
       run: |
-        find dist -name '*.pdb' -delete -print
+        find dist \( -name '*.pdb' -o -name '*.lib' -o -name '*.exp' \) -delete -print
         find dist -name 'extras.pk3' -delete -print
         find dist -type f
 
