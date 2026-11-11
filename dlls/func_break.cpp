@@ -797,6 +797,9 @@ public:
 	int Save( CSave& save ) override;
 	int Restore( CRestore& restore ) override;
 	float MaxSpeed() { return m_maxSpeed; }
+	void EXPORT PushThink();
+	Vector m_pushDir;	// not saved: a push never lasts across a load
+	float m_pushUntil;
 	int TakeDamage( entvars_t* inflictor, entvars_t* attacker, float damage, int damageType ) override;
 
 	static TYPEDESCRIPTION m_SaveData[];
@@ -910,6 +913,21 @@ void CPushable::Use( CBaseEntity* activator, CBaseEntity* caller, USE_TYPE useTy
 		Move( activator, 0 );
 }
 
+void CPushable::PushThink()
+{
+	if ( gpGlobals->time > m_pushUntil )
+	{
+		SetThink( NULL );
+		return;
+	}
+	Vector step = m_pushDir * ( MaxSpeed() * gpGlobals->frametime );
+	TraceResult tr;
+	TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + step, ignore_monsters, edict(), &tr );
+	if ( !tr.fStartSolid && !tr.fAllSolid && tr.flFraction > 0 )
+		UTIL_SetOrigin( pev, tr.vecEndPos );
+	pev->nextthink = gpGlobals->time;
+}
+
 void CPushable::Touch( CBaseEntity* other )
 {
 	static float s_nextLog = 0;
@@ -997,11 +1015,15 @@ void CPushable::Move( CBaseEntity* other, int push )
 			dir.x = away.x > 0 ? 1 : -1;
 		else
 			dir.y = away.y > 0 ? 1 : -1;
-		Vector step = dir * ( MaxSpeed() * gpGlobals->frametime );
-		TraceResult tr;
-		TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + step, ignore_monsters, edict(), &tr );
-		if ( !tr.fStartSolid && !tr.fAllSolid && tr.flFraction > 0 )
-			UTIL_SetOrigin( pev, tr.vecEndPos );
+		// the box is moved on its own think, every frame while the pushing lasts. Moving it only on
+		// the frames when the touch happens made it jerk and slow
+		m_pushDir = dir;
+		m_pushUntil = gpGlobals->time + 0.1f;
+		if ( m_pfnThink != (void ( CBaseEntity::* )())&CPushable::PushThink )
+		{
+			SetThink( &CPushable::PushThink );
+			pev->nextthink = gpGlobals->time;
+		}
 		toucher->velocity.x = dir.x * MaxSpeed();
 		toucher->velocity.y = dir.y * MaxSpeed();
 		if ( gpGlobals->time - m_soundTime > 0.7 && !m_silent )
