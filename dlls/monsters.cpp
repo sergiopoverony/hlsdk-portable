@@ -731,6 +731,20 @@ void CBaseMonster :: MonsterThink ( void )
 
 	// czeror test 11.11: monsters made by monstermakers in cz_recoil2 came with the light multiplier
 	// render effect but a zero multiplier and were drawn black. Find who does it, draw them lit.
+	// czeror diagnostics: what the children of monstermakers really have on the server (once per edict)
+	if ( !FNullEnt( pev->owner ) )
+	{
+		static float s_flLogged[2048];
+		int index = ENTINDEX( edict() );
+		if ( index > 0 && index < 2048 && s_flLogged[index] != pev->spawnflags + pev->max_health + 0.5f )
+		{
+			s_flLogged[index] = pev->spawnflags + pev->max_health + 0.5f;
+			ALERT( at_console, "lightmultiplier: child %d %s '%s' renderfx %d iuser4 %d rendermode %d renderamt %.0f cvar %.1f\n",
+				index, STRING( pev->classname ), STRING( pev->netname ), pev->renderfx, pev->iuser4, pev->rendermode,
+				pev->renderamt, CVAR_GET_FLOAT( "lightmultiplier" ) );
+		}
+	}
+
 	if ( pev->renderfx == kRenderFxLightMultiplier && pev->iuser4 <= 0 )
 	{
 		int value = (int)CVAR_GET_FLOAT( "lightmultiplier" );

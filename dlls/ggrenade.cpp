@@ -327,6 +327,17 @@ void CGrenade::UseSatchelCharges( entvars_t* pevOwner, SATCHELCODE code )
 	}
 }
 
+// the engine leaves a grenade that is inside a solid where it is and only clears its velocity
+BOOL CGrenade::IsTrappedInSolid()
+{
+	TraceResult tr;
+	UTIL_TraceHull( pev->origin, pev->origin, dont_ignore_monsters, point_hull, edict(), &tr );
+	if ( tr.fStartSolid || tr.fAllSolid )
+		return TRUE;
+	UTIL_TraceLine( pev->origin, pev->origin, ignore_monsters, edict(), &tr );
+	return tr.fStartSolid || tr.fAllSolid;
+}
+
 void CGrenade::BounceSound()
 {
 	if ( pev->dmg > 50 )
@@ -394,11 +405,13 @@ void CGrenade::BounceTouch( CBaseEntity* pOther )
 		pev->velocity = pev->velocity * 0.8f;
 		pev->sequence = RANDOM_LONG( 1, 1 );
 	}
-	else
+	else if ( pev->velocity.Length() > 1.0f || !IsTrappedInSolid() )
 	{
 		// play bounce sound
 		BounceSound();
 	}
+	// czeror test 11.11, cz_recoil kabloom2: a grenade trapped in a solid touches it every frame with
+	// no speed (the engine clears it); it rattled for the 20 s of its smoke
 	pev->framerate = pev->velocity.Length() / 200.0;
 	if ( !( pev->framerate <= 1 ) )
 		pev->framerate = 1;

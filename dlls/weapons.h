@@ -199,6 +199,7 @@ public:
 	void EXPORT SG_TumbleThink();
 	void EXPORT C4Think();
 	virtual void BounceSound();
+	BOOL IsTrappedInSolid();
 	int BloodColor() override { return DONT_BLEED; }
 	void Killed( entvars_t* attacker, int gib ) override;
 	int ObjectCaps() override { return m_bIsC4 ? FCAP_CONTINUOUS_USE : 0; }
