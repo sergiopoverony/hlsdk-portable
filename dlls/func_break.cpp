@@ -938,6 +938,21 @@ void CPushable::Move( CBaseEntity* other, int push )
 			( other->pev->groundentity && VARS( other->pev->groundentity ) == pev ) ? 1 : 0,
 			other->pev->velocity.x, other->pev->velocity.y, ( pev->flags & FL_ONGROUND ) ? 1 : 0,
 			pev->velocity.x, pev->velocity.y, pev->origin.x, pev->origin.y, pev->origin.z, m_maxSpeed, gpGlobals->frametime );
+
+		// can the box go where the player goes? Trace its own hull two units that way, with
+		// everything, then with the world only
+		Vector dir = Vector( other->pev->velocity.x, other->pev->velocity.y, 0 );
+		if( dir.Length() < 1 )
+			dir = Vector( -gpGlobals->v_forward.x, -gpGlobals->v_forward.y, 0 );
+		dir = dir.Normalize();
+		for( int ignore = 0; ignore < 2; ignore++ )
+		{
+			TraceResult tr;
+			TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + dir * 2, ignore ? ignore_monsters : dont_ignore_monsters, edict(), &tr );
+			ALERT( at_console, "pushable: trace %s dir %.2f %.2f startsolid %d allsolid %d fraction %.2f hit %s\n",
+				ignore ? "world" : "all", dir.x, dir.y, tr.fStartSolid, tr.fAllSolid, tr.flFraction,
+				tr.pHit ? STRING( tr.pHit->v.classname ) : "none" );
+		}
 	}
 	entvars_t* toucher = other->pev;
 	if ( (toucher->flags & FL_ONGROUND) && toucher->groundentity && VARS( toucher->groundentity ) == pev )
