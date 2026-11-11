@@ -928,6 +928,17 @@ void CPushable::Touch( CBaseEntity* other )
 
 void CPushable::Move( CBaseEntity* other, int push )
 {
+	// czeror: diagnostic, the box does not move when pulled with USE
+	static float s_nextMoveLog = 0;
+	if( other->IsPlayer() && gpGlobals->time > s_nextMoveLog )
+	{
+		s_nextMoveLog = gpGlobals->time + 0.3f;
+		ALERT( at_console, "pushable: move push %d player onground %d groundent is box %d vel %.0f %.0f box onground %d vel %.1f %.1f origin %.1f %.1f %.1f maxspeed %.0f frametime %.4f\n",
+			push, ( other->pev->flags & FL_ONGROUND ) ? 1 : 0,
+			( other->pev->groundentity && VARS( other->pev->groundentity ) == pev ) ? 1 : 0,
+			other->pev->velocity.x, other->pev->velocity.y, ( pev->flags & FL_ONGROUND ) ? 1 : 0,
+			pev->velocity.x, pev->velocity.y, pev->origin.x, pev->origin.y, pev->origin.z, m_maxSpeed, gpGlobals->frametime );
+	}
 	entvars_t* toucher = other->pev;
 	if ( (toucher->flags & FL_ONGROUND) && toucher->groundentity && VARS( toucher->groundentity ) == pev )
 	{
