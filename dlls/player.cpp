@@ -2873,8 +2873,8 @@ void CBasePlayer::PreThink()
 		int state = ( pev->flags & ( FL_DUCKING | FL_FROZEN )) | ( pev->bInDuck ? 0x10000000 : 0 ) | ( pev->iuser1 << 24 );
 		if( state != s_lastState || fabs( pev->view_ofs.z - s_lastViewZ ) > 1.0f )
 		{
-			ALERT( at_console, "playerstate: ducking %d induck %d frozen %d onground %d iuser1 %d view_z %.0f maxspeed %.0f hull %s\n",
-				( pev->flags & FL_DUCKING ) ? 1 : 0, pev->bInDuck ? 1 : 0, ( pev->flags & FL_FROZEN ) ? 1 : 0,
+			ALERT( at_console, "playerstate: t %.2f ducking %d induck %d frozen %d onground %d iuser1 %d view_z %.0f maxspeed %.0f hull %s\n",
+				gpGlobals->time, ( pev->flags & FL_DUCKING ) ? 1 : 0, pev->bInDuck ? 1 : 0, ( pev->flags & FL_FROZEN ) ? 1 : 0,
 				( pev->flags & FL_ONGROUND ) ? 1 : 0, pev->iuser1, pev->view_ofs.z, pev->maxspeed,
 				( pev->flags & FL_DUCKING ) ? "duck" : "stand" );
 			s_lastState = state;
