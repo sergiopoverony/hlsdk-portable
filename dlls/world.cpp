@@ -30,6 +30,7 @@
 #include "player.h"
 #include "weapons.h"
 #include "gamerules.h"
+#include "czeror/cz_seqapi.h"
 
 extern CGraph WorldGraph;
 extern CSoundEnt *pSoundEnt;
@@ -516,6 +517,7 @@ extern DLL_GLOBAL BOOL		g_fGameOver;
 
 void CWorld :: Spawn( void )
 {
+	CZ_SequenceReset(); // the world spawns first, before any trigger_sequence
 	g_fGameOver = FALSE;
 	g_numBreakableGlass = 0;
 	CVAR_SET_FLOAT( "lightmultiplier", m_lightMultiplier );

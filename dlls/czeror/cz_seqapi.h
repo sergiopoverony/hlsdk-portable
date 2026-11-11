@@ -19,4 +19,8 @@ int CZ_SequencePickSentence( const char *groupName, char *found, size_t size );
 
 void CZ_SequencePrecacheGroup( const char *groupName );
 
+// forget the built entries, each start of a map (also of the same one) builds and
+// precaches them again
+void CZ_SequenceReset( void );
+
 #endif // CZ_SEQAPI_H

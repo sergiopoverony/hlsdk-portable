@@ -68,18 +68,31 @@ static void SeqApi_LoadFile( const char *name )
 	ALERT( at_aiconsole, "sequence: %s: %d entries\n", path, count );
 }
 
+static void SeqApi_Clear( void )
+{
+	g_seqLib.Clear();
+	g_seqBuilt.clear();
+	g_seqEntries.clear();
+	g_seqLines.clear();
+	g_seqStrings.clear();
+	g_seqMap.clear();
+}
+
+void CZ_SequenceReset( void )
+{
+	// the entities that pointed to the old entries are gone. A restart of the same
+	// map is a new server too: the sounds of the entries must be precached again,
+	// with the old entries kept they were not and the dialogs stayed silent
+	SeqApi_Clear();
+}
+
 static void SeqApi_EnsureMap( void )
 {
 	const char *map = STRING( gpGlobals->mapname );
 
 	if( g_seqMap != map )
 	{
-		// a new map: the entities that pointed to the old entries are gone
-		g_seqLib.Clear();
-		g_seqBuilt.clear();
-		g_seqEntries.clear();
-		g_seqLines.clear();
-		g_seqStrings.clear();
+		SeqApi_Clear();
 		g_seqMap = map;
 	}
 

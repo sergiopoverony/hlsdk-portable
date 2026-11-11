@@ -3938,7 +3938,26 @@ TYPEDESCRIPTION CTriggerSequence::m_SaveData[] =
 	DEFINE_FIELD(CTriggerSequence, m_isDisabled, FIELD_BOOLEAN),
 };
 
-IMPLEMENT_SAVERESTORE(CTriggerSequence, CBaseDelay);
+int CTriggerSequence::Save(CSave &save)
+{
+	if (!CBaseDelay::Save(save))
+		return 0;
+	return save.WriteFields("CTriggerSequence", this, m_SaveData, ARRAYSIZE(m_SaveData));
+}
+
+int CTriggerSequence::Restore(CRestore &restore)
+{
+	if (!CBaseDelay::Restore(restore))
+		return 0;
+
+	int status = restore.ReadFields("CTriggerSequence", this, m_SaveData, ARRAYSIZE(m_SaveData));
+
+	// czeror: the entry is built (and its sounds precached) here, while the saved game
+	// loads and precaching is allowed; Restart() after ServerActivate finds it then
+	m_sequenceEntry = CZ_SequenceGet(NULL, m_sequenceEntryName);
+
+	return status;
+}
 
 CTriggerSequence::CTriggerSequence()
 {

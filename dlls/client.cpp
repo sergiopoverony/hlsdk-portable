@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include "buildslave_assert.h"
 #include "czeror/cz_music.h"
+#include "czeror/cz_seqapi.h"
 
 #define ASSERT_FILE BUILDSLAVE_PATH( L"czero\\dlls\\client.cpp" )
 
@@ -279,6 +280,9 @@ void ClientUserInfoChanged( edict_t* entity, char* infoBuffer )
 
 void ServerDeactivate()
 {
+	// the entities that pointed to the built sequence entries go away with the map
+	CZ_SequenceReset();
+
 	if ( g_serveractive == 1 )
 		g_serveractive = 0;
 }
