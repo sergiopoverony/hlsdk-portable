@@ -22,7 +22,6 @@
 
 #include "extdll.h"
 #include "util.h"
-#include "czeror/cz_fallback.h"
 
 // Holds engine functionality callbacks
 enginefuncs_t g_engfuncs;
@@ -36,5 +35,4 @@ extern "C" __attribute__(( visibility( "default" ) )) void GiveFnptrsToDll( engi
 {
 	memcpy( &g_engfuncs, functions, sizeof( g_engfuncs ) );
 	gpGlobals = globals;
-	CZ_FallbackHook( &g_engfuncs );
 }
