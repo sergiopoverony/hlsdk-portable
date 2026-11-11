@@ -7,9 +7,16 @@ on:
   pull_request:
     paths-ignore:
       - 'README.md'
+  workflow_dispatch:
+    inputs:
+      client_ref:
+        description: Branch of sergiopoverony/cs16-client to take the client from
+        default: czds
 
-# czeror: only the server for now, the client is still the Half-Life one
-# and is built from the CZ sources later
+# czeror: the server is built from here. On Windows the client and the menu
+# are built in the same job from sergiopoverony/cs16-client (branch czds) until
+# the client is built from the CZ sources, the package holds both.
+# Run it by hand (workflow_dispatch) after a change of the client.
 
 jobs:
   build:
@@ -59,6 +66,29 @@ jobs:
         cmake --build build --target all
         cmake --build build --target install
 
+    - name: Checkout client
+      if: startsWith(matrix.os, 'windows')
+      uses: actions/checkout@v4
+      with:
+        repository: sergiopoverony/cs16-client
+        ref: ${{ github.event.inputs.client_ref || 'czds' }}
+        path: client-src
+        submodules: recursive
+
+    - name: Build client on Windows
+      if: startsWith(matrix.os, 'windows')
+      shell: bash
+      working-directory: client-src
+      run: |
+        git -C 3rdparty/mainui_cpp apply --ignore-whitespace ../../mainui_background.patch
+        gd=$(grep ../build/CMakeCache.txt -Ee 'GAMEDIR:STRING=[a-z0-9]+' | cut -d '=' -f 2)
+        cmake -G Ninja -B build -S . -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DBUILD_SERVER=OFF -DENABLE_YY_THUNKS=OFF -DGAME_DIR="$gd" \
+          -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/dist"
+        cmake --build build
+        cmake --install build
+        echo "client: $(git rev-parse --short HEAD)"
+
     - name: Collect pdb
       if: startsWith(matrix.os, 'windows')
       shell: bash
@@ -77,5 +107,5 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: hlsdk-${{ steps.extract_branch.outputs.branch }}-${{ startsWith(matrix.os, 'windows') && 'windows' || 'linux' }}
+        name: ${{ steps.extract_gamedir.outputs.gamedir }}-${{ startsWith(matrix.os, 'windows') && 'windows' || 'linux' }}
         path: dist/${{ steps.extract_gamedir.outputs.gamedir }}
