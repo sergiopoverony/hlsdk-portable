@@ -374,34 +374,83 @@ void Library::Emit(const RawEntry &raw, Modifiers &state, std::vector<Command> &
 			continue;
 		}
 
-		// '#' command
-		Command c;
-		c.mod = state;
-		// inline modifiers apply only to this command; an inline "pause" is the wait after it
+		// '#' command. One command line of the engine holds several fields at once and runs them
+		// together (CTriggerSequence::ExecuteSequenceCommand: fire, kill, text, sound), e.g.
+		//	#text = "", sound = dialogSworeIHeard, speaker = tStart, pause = 4
+		//	@ObjectiveStyle #text = "#OBJ1_LCAUSE_NEW", firetargets = "new_objective01_complete"
+		// The other fields of the line were taken for modifiers and lost.
+		Modifiers mod = state;
 		float inlinePause = 0.0f;
-		for (size_t a = 1; a < op.args.size(); a++)
+		bool hasPause = false;
+		for (size_t a = 0; a < op.args.size(); a++)
 		{
-			if (op.args[a].key == "pause")
+			const std::string &k = op.args[a].key;
+			if (k == "pause")
+			{
 				inlinePause = (float)atof(op.args[a].value.c_str());
-			else
-				ApplyModifier(c.mod, op.args[a].key, op.args[a].value);
+				hasPause = true;
+			}
+			else if (a > 0 && k == "holdtime")
+				mod.holdtime = (float)atof(op.args[a].value.c_str());
+			else if (a > 0)
+				ApplyModifier(mod, k, op.args[a].value);
 		}
 
-		const std::string &val = op.args.empty() ? std::string() : op.args[0].value;
+		if (op.key == "holdtime")
+		{
+			state.holdtime = (float)atof(op.args.empty() ? "0" : op.args[0].value.c_str());
+			continue;
+		}
 
-		if (op.key == "pause") { c.kind = CMD_PAUSE; c.delay = (float)atof(val.c_str()); }
-		else if (op.key == "firetargets") { c.kind = CMD_FIRE; c.value = val; }
-		else if (op.key == "killtargets") { c.kind = CMD_KILL; c.value = val; }
-		else if (op.key == "text") { c.kind = CMD_TEXT; c.value = val; }
-		else if (op.key == "sound") { c.kind = CMD_SOUND; c.value = val; }
-		else if (op.key == "repeat") { c.kind = CMD_REPEAT; c.repeat = atoi(val.c_str()); }
-		else if (op.key == "holdtime") { state.holdtime = (float)atof(val.c_str()); continue; }
-		else continue;
-
-		if (c.kind != CMD_PAUSE)
+		if (op.key == "pause" && op.args.size() <= 1)
+		{
+			Command c;
+			c.mod = mod;
+			c.kind = CMD_PAUSE;
 			c.delay = inlinePause;
+			out.push_back(c);
+			continue;
+		}
 
-		out.push_back(c);
+		static const char *order[] = { "firetargets", "killtargets", "text", "sound", "repeat" };
+		size_t first = out.size();
+
+		for (size_t o = 0; o < sizeof(order) / sizeof(order[0]); o++)
+		{
+			for (size_t a = 0; a < op.args.size(); a++)
+			{
+				if (op.args[a].key != order[o])
+					continue;
+
+				const std::string &val = op.args[a].value;
+				if (o == 2 && val.empty())
+					continue; // #text = "" only carries the line, nothing to show
+
+				Command c;
+				c.mod = mod;
+				if (o == 0) { c.kind = CMD_FIRE; c.value = val; }
+				else if (o == 1) { c.kind = CMD_KILL; c.value = val; }
+				else if (o == 2) { c.kind = CMD_TEXT; c.value = val; }
+				else if (o == 3) { c.kind = CMD_SOUND; c.value = val; }
+				else { c.kind = CMD_REPEAT; c.repeat = atoi(val.c_str()); }
+				out.push_back(c);
+			}
+		}
+
+		// the pause of the line is the wait after all of it
+		if (hasPause)
+		{
+			if (out.size() > first)
+				out.back().delay = inlinePause;
+			else
+			{
+				Command c;
+				c.mod = mod;
+				c.kind = CMD_PAUSE;
+				c.delay = inlinePause;
+				out.push_back(c);
+			}
+		}
 	}
 }
 
