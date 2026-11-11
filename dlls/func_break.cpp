@@ -964,10 +964,23 @@ void CPushable::Move( CBaseEntity* other, int push )
 	}
 	if ( !push && sv_pushable_fixed_tick_fudge.value >= 0 )
 		factor *= sv_pushable_fixed_tick_fudge.value * gpGlobals->frametime;
-	if ( push || fabsf( pev->velocity.x ) < fabsf( toucher->velocity.x - toucher->velocity.x * factor ) )
-		pev->velocity.x += toucher->velocity.x * factor;
-	if ( push || fabsf( pev->velocity.y ) < fabsf( toucher->velocity.y - toucher->velocity.y * factor ) )
-		pev->velocity.y += toucher->velocity.y * factor;
+	if ( !push && playerTouch )
+	{
+		// czeror: pulling with USE. The movement code slows a player who holds USE to a third of
+		// his speed on every frame, so he walks at 10 to 20 units per second at 150+ frames per
+		// second. The box got a small share of that each frame and the engine friction
+		// (4 x 100 units per second squared) took it all back: it never moved. Follow the
+		// player's own velocity instead
+		pev->velocity.x = toucher->velocity.x;
+		pev->velocity.y = toucher->velocity.y;
+	}
+	else
+	{
+		if ( push || fabsf( pev->velocity.x ) < fabsf( toucher->velocity.x - toucher->velocity.x * factor ) )
+			pev->velocity.x += toucher->velocity.x * factor;
+		if ( push || fabsf( pev->velocity.y ) < fabsf( toucher->velocity.y - toucher->velocity.y * factor ) )
+			pev->velocity.y += toucher->velocity.y * factor;
+	}
 	float speed = pev->velocity.Length2D();
 	if ( speed > MaxSpeed() )
 	{
