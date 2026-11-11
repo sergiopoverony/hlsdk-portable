@@ -965,6 +965,53 @@ void CPushable::Move( CBaseEntity* other, int push )
 	BOOL playerTouch = other->IsPlayer();
 	if ( playerTouch && push && (toucher->button & IN_USE) )
 		return;
+	if ( playerTouch && push )
+	{
+		// czeror: pushing by a player. Xash sees the box as stuck inside the player (a trace of the
+		// box hull starts in him), so its own physics never moves it, and the player's velocity at
+		// the moment of the touch is already cut by the box. So: when the player walks into the box,
+		// move the box along the axis away from him at its top speed, by hand, with a trace that
+		// ignores monsters (the player) and hits the world and the other solid things
+		if ( !( toucher->flags & FL_ONGROUND ) )
+			return;
+		UTIL_MakeVectors( Vector( 0, toucher->v_angle.y, 0 ) );
+		Vector wish = g_vecZero;
+		if ( toucher->button & IN_FORWARD ) wish = wish + gpGlobals->v_forward;
+		if ( toucher->button & IN_BACK ) wish = wish - gpGlobals->v_forward;
+		if ( toucher->button & IN_MOVERIGHT ) wish = wish + gpGlobals->v_right;
+		if ( toucher->button & IN_MOVELEFT ) wish = wish - gpGlobals->v_right;
+		wish.z = 0;
+		if ( wish.Length() < 0.1f )
+			return;
+		wish = wish.Normalize();
+		Vector center = ( pev->absmin + pev->absmax ) * 0.5f;
+		Vector away = center - toucher->origin;
+		away.z = 0;
+		if ( away.Length() < 1 )
+			return;
+		away = away.Normalize();
+		if ( DotProduct( wish, away ) < 0.5f )
+			return;
+		Vector dir = g_vecZero;
+		if ( fabsf( away.x ) > fabsf( away.y ) )
+			dir.x = away.x > 0 ? 1 : -1;
+		else
+			dir.y = away.y > 0 ? 1 : -1;
+		Vector step = dir * ( MaxSpeed() * gpGlobals->frametime );
+		TraceResult tr;
+		TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + step, ignore_monsters, edict(), &tr );
+		if ( !tr.fStartSolid && !tr.fAllSolid && tr.flFraction > 0 )
+			UTIL_SetOrigin( pev, tr.vecEndPos );
+		toucher->velocity.x = dir.x * MaxSpeed();
+		toucher->velocity.y = dir.y * MaxSpeed();
+		if ( gpGlobals->time - m_soundTime > 0.7 && !m_silent )
+		{
+			m_soundTime = gpGlobals->time;
+			m_lastSound = RANDOM_LONG( 0, 2 );
+			EMIT_SOUND( edict(), CHAN_WEAPON, m_soundNames[m_lastSound], 0.5f, ATTN_NORM );
+		}
+		return;
+	}
 	float factor = 0.25f;
 	if ( playerTouch )
 	{
@@ -1011,19 +1058,6 @@ void CPushable::Move( CBaseEntity* other, int push )
 		toucher->velocity.x = pev->velocity.x;
 		toucher->velocity.y = pev->velocity.y;
 
-		// czeror: Xash treats a box that the player touches as stuck in him (a trace of the box
-		// hull starts inside the player), so its own physics never moves it. Move it here, with
-		// a trace that ignores the player and hits everything else, then let its velocity go
-		Vector step = Vector( pev->velocity.x, pev->velocity.y, 0 ) * gpGlobals->frametime;
-		if ( step.Length() > 0 )
-		{
-			TraceResult tr;
-			TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + step, dont_ignore_monsters, other->edict(), &tr );
-			if ( !tr.fStartSolid && !tr.fAllSolid && tr.flFraction > 0 )
-				UTIL_SetOrigin( pev, tr.vecEndPos );
-		}
-		pev->velocity.x = 0;
-		pev->velocity.y = 0;
 	}
 	else if ( speed >= playerSpeed )
 		pev->velocity = pev->velocity.Normalize() * (playerSpeed * 1.1);
