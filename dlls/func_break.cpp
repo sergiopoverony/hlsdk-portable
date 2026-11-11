@@ -1010,6 +1010,20 @@ void CPushable::Move( CBaseEntity* other, int push )
 			return;
 		toucher->velocity.x = pev->velocity.x;
 		toucher->velocity.y = pev->velocity.y;
+
+		// czeror: Xash treats a box that the player touches as stuck in him (a trace of the box
+		// hull starts inside the player), so its own physics never moves it. Move it here, with
+		// a trace that ignores the player and hits everything else, then let its velocity go
+		Vector step = Vector( pev->velocity.x, pev->velocity.y, 0 ) * gpGlobals->frametime;
+		if ( step.Length() > 0 )
+		{
+			TraceResult tr;
+			TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + step, dont_ignore_monsters, other->edict(), &tr );
+			if ( !tr.fStartSolid && !tr.fAllSolid && tr.flFraction > 0 )
+				UTIL_SetOrigin( pev, tr.vecEndPos );
+		}
+		pev->velocity.x = 0;
+		pev->velocity.y = 0;
 	}
 	else if ( speed >= playerSpeed )
 		pev->velocity = pev->velocity.Normalize() * (playerSpeed * 1.1);
