@@ -89,12 +89,14 @@ jobs:
         cmake --install build
         echo "client: $(git rev-parse --short HEAD)"
 
-    - name: Collect pdb
-      if: startsWith(matrix.os, 'windows')
+    # while testing the package holds only what changes: no debug files (.pdb)
+    # and no extras.pk3 of the client (the game folder already has it)
+    - name: Strip the package
       shell: bash
       run: |
-        gd=$(grep build/CMakeCache.txt -Ee 'GAMEDIR:STRING=[a-z0-9]+' | cut -d '=' -f 2)
-        for f in $(find build -name "mp.pdb"); do cp "$f" "dist/$gd/dlls/"; done
+        find dist -name '*.pdb' -delete -print
+        find dist -name 'extras.pk3' -delete -print
+        find dist -type f
 
     - name: Extract branch name
       shell: bash
