@@ -844,6 +844,11 @@ void CPushable::Spawn()
 	if ( pev->friction > 399 )
 		pev->friction = 399;
 	m_maxSpeed = 400 - pev->friction;
+	// czeror: cz_lostcause has a box with friction 600, which gives a top speed of 1 unit per
+	// second: it never moves. The original server code gives the same number, but the box has
+	// to be pushed to the window, so a heavy box is allowed a slow, but real, speed
+	if( m_maxSpeed < 50 )
+		m_maxSpeed = 50;
 	pev->flags |= FL_FLOAT;
 	pev->friction = 0;
 	pev->origin.z += 1;	// Pick up off of the floor
