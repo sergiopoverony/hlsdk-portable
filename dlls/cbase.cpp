@@ -185,7 +185,31 @@ void DispatchKeyValue( edict_t *pentKeyvalue, KeyValueData *pkvd )
 	if ( !pkvd || !pentKeyvalue )
 		return;
 
+	// czeror: maps use low detail "<name>_lo.mdl" models; use the full "<name>.mdl" when it exists
+	char hiModel[128];
+	const char *oldValue = NULL;
+	if ( pkvd->szKeyName && pkvd->szValue && !strcmp( pkvd->szKeyName, "model" ) && CVAR_GET_FLOAT( "czr_himodels" ) != 0 )
+	{
+		int len = (int)strlen( pkvd->szValue );
+		if ( len > 7 && len < (int)sizeof( hiModel ) && !strcmp( pkvd->szValue + len - 7, "_lo.mdl" ) )
+		{
+			strcpy( hiModel, pkvd->szValue );
+			strcpy( hiModel + len - 7, ".mdl" );
+			int fileLen = 0;
+			byte *pFile = LOAD_FILE_FOR_ME( hiModel, &fileLen );
+			if ( pFile )
+			{
+				FREE_FILE( pFile );
+				oldValue = pkvd->szValue;
+				pkvd->szValue = hiModel;
+			}
+		}
+	}
+
 	EntvarsKeyvalue( VARS(pentKeyvalue), pkvd );
+
+	if ( oldValue )
+		pkvd->szValue = (char *)oldValue;
 
 	// Get the actualy entity object
 	CBaseEntity *pEntity = (CBaseEntity *)GET_PRIVATE(pentKeyvalue);

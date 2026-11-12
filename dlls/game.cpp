@@ -20,6 +20,7 @@
 cvar_t	displaysoundlist = {"displaysoundlist","0"};
 cvar_t	lightmultiplier = { "lightmultiplier", "0" };
 cvar_t	lightmultenabled = { "lightmultenabled", "1" };
+cvar_t	czr_himodels = { "czr_himodels", "1" };
 cvar_t	maptier = { "maptier", "2" };
 cvar_t	weaponautoswitch = { "autoswitch", "0" };
 
@@ -469,6 +470,7 @@ void GameDLLInit( void )
 	CVAR_REGISTER (&displaysoundlist);
 	CVAR_REGISTER( &lightmultiplier );
 	CVAR_REGISTER( &lightmultenabled );
+	CVAR_REGISTER( &czr_himodels );
 	CVAR_REGISTER( &maptier );
 	CVAR_REGISTER( &weaponautoswitch );
 

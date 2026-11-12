@@ -18,6 +18,7 @@
 extern cvar_t	displaysoundlist;
 extern cvar_t	lightmultiplier;
 extern cvar_t	lightmultenabled;
+extern cvar_t	czr_himodels;
 extern cvar_t	maptier;
 extern cvar_t	weaponautoswitch;
 
