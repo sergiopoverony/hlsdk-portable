@@ -3235,6 +3235,9 @@ void CBaseMonster :: KeyValue( KeyValueData *pkvd )
 	{
 		int oldCantMove = m_cantMove;
 		m_cantMove = atoi( pkvd->szValue );
+		if ( gpGlobals->time > 1 )
+			ALERT( at_aiconsole, "cantmove kv: %s %s old %d new %d state %d dead %d cine %d\n", STRING( pev->classname ),
+				STRING( pev->targetname ), oldCantMove, m_cantMove, (int)m_MonsterState, (int)pev->deadflag, m_pCine ? 1 : 0 );
 		pkvd->fHandled = TRUE;
 		// changed from the map at runtime (trigger_changekeyvalue): let the monster go along its path
 		if ( oldCantMove && !m_cantMove && pev->deadflag == DEAD_NO && !m_pCine && m_MonsterState != MONSTERSTATE_COMBAT )
