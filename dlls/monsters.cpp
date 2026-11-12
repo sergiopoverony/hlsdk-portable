@@ -771,7 +771,7 @@ void CBaseMonster :: MonsterThink ( void )
 	{
 		int iSequence;
 
-		if ( m_idleAnim )
+		if ( UseIdleAnim() )
 		{
 			iSequence = LookupSequence( STRING(m_idleAnim) );
 		}
@@ -791,7 +791,7 @@ void CBaseMonster :: MonsterThink ( void )
 		{
 			pev->sequence = iSequence;	// Set to new anim (if it's there)
 			ResetSequenceInfo( );
-			if ( m_idleAnim && !m_fSequenceLoops )
+			if ( UseIdleAnim() && !m_fSequenceLoops )
 				pev->frame = 0;
 		}
 	}
@@ -1402,7 +1402,7 @@ void CBaseMonster :: SetActivity ( Activity NewActivity )
 	if ( ((NewActivity >= ACT_DIESIMPLE && NewActivity <= ACT_DIEVIOLENT) ||
 		(NewActivity >= ACT_DIE_HEADSHOT && NewActivity <= ACT_DIE_BACKSHOT)) && m_deathAnim )
 		iSequence = LookupSequence( STRING(m_deathAnim) );
-	else if ( (NewActivity == ACT_IDLE || NewActivity == ACT_SIGNAL3) && m_idleAnim )
+	else if ( (NewActivity == ACT_IDLE || NewActivity == ACT_SIGNAL3) && UseIdleAnim() )
 		iSequence = LookupSequence( STRING(m_idleAnim) );
 	else
 		iSequence = LookupActivity ( NewActivity );

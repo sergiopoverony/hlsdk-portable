@@ -112,6 +112,7 @@ public:
 	int m_forcedTarget;
 	int m_deathAnim;
 	int m_idleAnim;
+	BOOL UseIdleAnim() const { return m_idleAnim && m_MonsterState != MONSTERSTATE_COMBAT; } // no idleanim while fighting
 	float m_healthMultiplier;
 	Vector m_weaponAccuracy;
 	int m_behaviorType;

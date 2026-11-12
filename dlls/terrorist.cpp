@@ -1517,7 +1517,7 @@ int CTerrorist::SetActivityPistolBase( Activity activity )
 	switch ( activity )
 	{
 	case ACT_IDLE:
-		if ( m_idleAnim ) name = STRING( m_idleAnim );
+		if ( UseIdleAnim() ) name = STRING( m_idleAnim );
 		else if ( m_MonsterState == MONSTERSTATE_COMBAT || heardCombat )
 			name = m_bStanding ? "pistol_combatidlle" : "pistol_crouching_wait";
 		else name = "pistol_idle1";
@@ -1567,7 +1567,7 @@ int CTerrorist::SetActivityMeleeBase( Activity activity )
 	switch ( activity )
 	{
 	case ACT_IDLE:
-		if ( m_idleAnim ) name = STRING( m_idleAnim );
+		if ( UseIdleAnim() ) name = STRING( m_idleAnim );
 		else name = m_MonsterState == MONSTERSTATE_COMBAT || heardCombat ? "machete_combatidle" : "machete_idle1";
 		break;
 	case ACT_WALK: name = "machete_patrol_street"; break;
@@ -1705,7 +1705,7 @@ int CTerrorist::SetActivityLAWBase( Activity activity )
 	GET_MODEL_PTR( edict() );
 	switch ( activity )
 	{
-	case ACT_IDLE: return LookupSequence( m_idleAnim ? STRING( m_idleAnim ) : "LAW_fire_idle" );
+	case ACT_IDLE: return LookupSequence( UseIdleAnim() ? STRING( m_idleAnim ) : "LAW_fire_idle" );
 	case ACT_RUN: return LookupSequence( "law_run" );
 	case ACT_TURN_LEFT: return LookupSequence( "law_180L" );
 	case ACT_TURN_RIGHT: return LookupSequence( "law_180R" );
@@ -1742,7 +1742,7 @@ void CTerrorist::SetActivity( Activity activity )
 		switch ( (int)activity )
 		{
 		case ACT_IDLE:
-			if ( m_idleAnim ) sequence = LookupSequence( STRING( m_idleAnim ) );
+			if ( UseIdleAnim() ) sequence = LookupSequence( STRING( m_idleAnim ) );
 			else if ( m_MonsterState == MONSTERSTATE_COMBAT )
 				sequence = LookupSequence( m_bStanding ? "combatidle" : "crouching_wait" );
 			break;
