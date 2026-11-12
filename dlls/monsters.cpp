@@ -3233,8 +3233,25 @@ void CBaseMonster :: KeyValue( KeyValueData *pkvd )
 	}
 	else if ( FStrEq(pkvd->szKeyName, "cantmove") )
 	{
+		int oldCantMove = m_cantMove;
 		m_cantMove = atoi( pkvd->szValue );
 		pkvd->fHandled = TRUE;
+		// changed from the map at runtime (trigger_changekeyvalue): let the monster go along its path
+		if ( oldCantMove && !m_cantMove && pev->deadflag == DEAD_NO && !m_pCine && m_MonsterState != MONSTERSTATE_COMBAT )
+		{
+			if ( !m_pGoalEnt && !FStringNull( pev->target ) )
+				m_pGoalEnt = CBaseEntity::Instance( FIND_ENTITY_BY_TARGETNAME( NULL, STRING( pev->target ) ) );
+			ALERT( at_aiconsole, "cantmove 0: %s state %d goal %s\n", STRING( pev->classname ), (int)m_MonsterState,
+				m_pGoalEnt ? STRING( m_pGoalEnt->pev->classname ) : "none" );
+			if ( m_pGoalEnt )
+			{
+				m_movementGoal = MOVEGOAL_PATHCORNER;
+				MakeIdealYaw( m_pGoalEnt->pev->origin );
+				FRefreshRoute();
+				SetState( MONSTERSTATE_IDLE );
+				ChangeSchedule( GetScheduleOfType( SCHED_IDLE_WALK ) );
+			}
+		}
 	}
 	else if ( FStrEq(pkvd->szKeyName, "forcedtarget") )
 	{
