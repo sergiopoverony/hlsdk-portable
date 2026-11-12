@@ -3922,6 +3922,9 @@ void CBasePlayer::CheatImpulseCommands( int impulse )
 int CBasePlayer::TakeDamage( entvars_t* inflictor, entvars_t* attacker, float damage, int damageType )
 {
 	float previousHealth = pev->health;
+	ALERT( at_aiconsole, "player damage: t %.2f inflictor %s (%s) attacker %s dmg %.1f type 0x%x health %.0f vel %.0f %.0f %.0f\n", gpGlobals->time,
+		inflictor ? STRING( inflictor->classname ) : "none", inflictor ? STRING( inflictor->targetname ) : "",
+		attacker ? STRING( attacker->classname ) : "none", damage, damageType, pev->health, pev->velocity.x, pev->velocity.y, pev->velocity.z );
 	Vector inflictorOrigin = CBaseEntity::Instance( inflictor )->pev->origin;
 	if ( m_pActiveItem && FClassnameIs( m_pActiveItem->pev, "weapon_shieldgun" )
 		&& FInViewCone( &inflictorOrigin )
