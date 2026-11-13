@@ -38,6 +38,9 @@
 #include "nodes.h"
 #include "czeror/cz_music.h"
 
+// counterterrorist.cpp
+extern void CZ_SpawnSandstormCTs( void );
+
 #define HITGROUP_SHIELD		8
 #define PLAYER_HUD_DAMAGE_MASK	0x774118
 #define PLAYER_LARGE_FLINCH_WEAPONS	( ( 1 << WEAPON_SCOUT ) | ( 1 << WEAPON_AUG ) | ( 1 << WEAPON_SG550 ) \
@@ -2512,6 +2515,7 @@ void CBasePlayer::UpdateClientData()
 			if ( g_pGameRules->IsMultiplayer() )
 				FireTargets( "game_playerjoin", this, this, USE_TOGGLE, 0 );
 		}
+		CZ_SpawnSandstormCTs();
 		FireTargets( "game_playerspawn", this, this, USE_TOGGLE, 0 );
 		InitStatusBar();
 	}

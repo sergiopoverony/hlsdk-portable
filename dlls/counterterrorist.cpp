@@ -2943,3 +2943,53 @@ void CDeadCT::Spawn()
 	}
 	MonsterInitDead();
 }
+
+// CZ:DS: the SAS squad of cz_sandstorm2 (train_ct1, train_ct2) is made in cz_sandstorm and goes through the level change.
+// When the map is started by itself there is nobody, and the scripts of the map can't find them. Make them then,
+// where the level change puts them: the same place relative to the landmark.
+static CBaseEntity *CZ_CreateSandstormCT( const char *name, const Vector &origin, float yaw, const char *idleanim )
+{
+	edict_t *pent = CREATE_NAMED_ENTITY( MAKE_STRING( "monster_counter_terrorist_sas" ));
+	if( FNullEnt( pent ))
+		return NULL;
+
+	struct { const char *key; const char *value; } keys[] = {
+		{ "targetname", name },
+		{ "spawnflags", "130" },
+		{ "usetarget", "null_usetargetname" },
+		{ "skin", "2" },
+		{ "head", "1" },
+		{ "idleanim", idleanim },
+	};
+
+	for( size_t i = 0; i < sizeof( keys ) / sizeof( keys[0] ); i++ )
+	{
+		if( !keys[i].value || !keys[i].value[0] )
+			continue;
+		KeyValueData kvd;
+		kvd.szClassName = "monster_counter_terrorist_sas";
+		kvd.szKeyName = (char *)keys[i].key;
+		kvd.szValue = (char *)keys[i].value;
+		kvd.fHandled = FALSE;
+		DispatchKeyValue( pent, &kvd );
+	}
+
+	pent->v.origin = origin;
+	pent->v.angles = Vector( 0, yaw, 0 );
+	DispatchSpawn( pent );
+	return CBaseEntity::Instance( pent );
+}
+
+void CZ_SpawnSandstormCTs( void )
+{
+	if( !FStrEq( STRING( gpGlobals->mapname ), "cz_sandstorm2" ))
+		return;
+
+	// they came with the level change
+	if( UTIL_FindEntityByTargetname( NULL, "train_ct1" ) || UTIL_FindEntityByTargetname( NULL, "train_ct2" ))
+		return;
+
+	ALERT( at_console, "CZ:DS: cz_sandstorm2 started without the level change, making the SAS squad\n" );
+	CZ_CreateSandstormCT( "train_ct2", Vector( 1298, 2526, 38 ), 315, NULL );
+	CZ_CreateSandstormCT( "train_ct1", Vector( 1312, 2478, 38 ), 45, "idle4" );
+}
