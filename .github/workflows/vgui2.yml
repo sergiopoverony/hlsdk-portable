@@ -5,6 +5,9 @@ name: vgui2
 
 on:
   workflow_dispatch:
+  push:
+    branches: [czeror]
+    paths: ['.github/workflows/vgui2.yml']
 
 jobs:
   build:
