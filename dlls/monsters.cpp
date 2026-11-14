@@ -729,29 +729,13 @@ void CBaseMonster :: MonsterThink ( void )
 	pev->nextthink = gpGlobals->time + 0.1;// keep monster thinking.
 	HealthUpdate();
 
-	// czeror test 11.11: monsters made by monstermakers in cz_recoil2 came with the light multiplier
-	// render effect but a zero multiplier and were drawn black. Find who does it, draw them lit.
-	// czeror diagnostics: what the children of monstermakers really have on the server (once per edict)
-	if ( !FNullEnt( pev->owner ) )
-	{
-		static float s_flLogged[2048];
-		int index = ENTINDEX( edict() );
-		if ( index > 0 && index < 2048 && s_flLogged[index] != pev->spawnflags + pev->max_health + 0.5f )
-		{
-			s_flLogged[index] = pev->spawnflags + pev->max_health + 0.5f;
-			ALERT( at_console, "lightmultiplier: child %d %s '%s' renderfx %d iuser4 %d rendermode %d renderamt %.0f cvar %.1f\n",
-				index, STRING( pev->classname ), STRING( pev->netname ), pev->renderfx, pev->iuser4, pev->rendermode,
-				pev->renderamt, CVAR_GET_FLOAT( "lightmultiplier" ) );
-		}
-	}
-
+	// czeror: monsters made by monstermakers (cz_recoil2) came with the light multiplier render effect
+	// but a zero multiplier and were drawn black: give them the value of the map.
 	if ( pev->renderfx == kRenderFxLightMultiplier && pev->iuser4 <= 0 )
 	{
 		int value = (int)CVAR_GET_FLOAT( "lightmultiplier" );
 		CWorld *pWorld = (CWorld *)CBaseEntity::Instance( INDEXENT( 0 ) );
 		int worldValue = pWorld ? (int)pWorld->m_lightMultiplier : 0;
-		ALERT( at_console, "lightmultiplier: %s '%s' had renderfx %d with iuser4 %d, cvar %d, world %d\n", STRING( pev->classname ),
-			STRING( pev->targetname ), pev->renderfx, pev->iuser4, value, worldValue );
 		// the map's value, like the monsters placed on the map got it
 		if ( worldValue > 0 )
 			value = worldValue;

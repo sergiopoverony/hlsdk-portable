@@ -175,7 +175,6 @@ public:
 	void JustSpoke( float duration );
 	Schedule_t* ScheduleFromName( const char* name ) override;
 	void InitScheduleTable();
-	float m_diagTime = 0;
 	void ClearScheduleTableFlags();
 	int GetScheduleFromTable();
 	int GetBehaviorType();
@@ -2141,12 +2140,6 @@ Schedule_t* CTerrorist::GetSchedule()
 	ActivateTableEntry( GetFlyingSchedule() );
 	ActivateTableEntry( GetHearingSchedule() );
 
-	if ( m_pGoalEnt && gpGlobals->time > 1 && gpGlobals->time > m_diagTime )
-	{
-		m_diagTime = gpGlobals->time + 3;
-		ALERT( at_aiconsole, "idle diag: %s t %.1f state %d cant %d goal %s alertable %d clear %.1f\n", STRING( pev->targetname ),
-			gpGlobals->time, (int)m_MonsterState, m_cantMove, STRING( m_pGoalEnt->pev->classname ), m_alertable ? 1 : 0, m_alertClearTime );
-	}
 	if ( m_MonsterState == MONSTERSTATE_IDLE )
 	{
 		BOOL followPath = FALSE;

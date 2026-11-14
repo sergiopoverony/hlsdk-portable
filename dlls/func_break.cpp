@@ -853,10 +853,6 @@ void CPushable::Spawn()
 	UTIL_SetOrigin( pev, pev->origin );
 	pev->skin = (int)((pev->maxs.x - pev->mins.x) * pev->skin * (pev->maxs.y - pev->mins.y) * 0.0005);
 	m_soundTime = 0;
-	// czeror: diagnostic, the box in cz_lostcause2 does not move
-	ALERT( at_console, "pushable: spawn model %s origin %.0f %.0f %.0f mins %.0f %.0f %.0f maxs %.0f %.0f %.0f solid %d movetype %d maxspeed %.0f flags %x\n",
-		STRING( pev->model ), pev->origin.x, pev->origin.y, pev->origin.z, pev->mins.x, pev->mins.y, pev->mins.z,
-		pev->maxs.x, pev->maxs.y, pev->maxs.z, pev->solid, pev->movetype, m_maxSpeed, pev->flags );
 }
 
 void CPushable::Precache()
@@ -930,48 +926,12 @@ void CPushable::PushThink()
 
 void CPushable::Touch( CBaseEntity* other )
 {
-	static float s_nextLog = 0;
-	if( other->IsPlayer() && gpGlobals->time > s_nextLog )
-	{
-		s_nextLog = gpGlobals->time + 0.5f;
-		ALERT( at_console, "pushable: touch by player, onground %d groundent is box %d use %d player velocity %.0f %.0f box velocity %.0f %.0f maxspeed %.0f\n",
-			( other->pev->flags & FL_ONGROUND ) ? 1 : 0,
-			( other->pev->groundentity && VARS( other->pev->groundentity ) == pev ) ? 1 : 0,
-			( other->pev->button & IN_USE ) ? 1 : 0, other->pev->velocity.x, other->pev->velocity.y,
-			pev->velocity.x, pev->velocity.y, m_maxSpeed );
-	}
 	if ( !FClassnameIs( other->pev, "worldspawn" ) )
 		Move( other, 1 );
 }
 
 void CPushable::Move( CBaseEntity* other, int push )
 {
-	// czeror: diagnostic, the box does not move when pulled with USE
-	static float s_nextMoveLog = 0;
-	if( other->IsPlayer() && gpGlobals->time > s_nextMoveLog )
-	{
-		s_nextMoveLog = gpGlobals->time + 0.3f;
-		ALERT( at_console, "pushable: move push %d player onground %d groundent is box %d vel %.0f %.0f box onground %d vel %.1f %.1f origin %.1f %.1f %.1f maxspeed %.0f frametime %.4f\n",
-			push, ( other->pev->flags & FL_ONGROUND ) ? 1 : 0,
-			( other->pev->groundentity && VARS( other->pev->groundentity ) == pev ) ? 1 : 0,
-			other->pev->velocity.x, other->pev->velocity.y, ( pev->flags & FL_ONGROUND ) ? 1 : 0,
-			pev->velocity.x, pev->velocity.y, pev->origin.x, pev->origin.y, pev->origin.z, m_maxSpeed, gpGlobals->frametime );
-
-		// can the box go where the player goes? Trace its own hull two units that way, with
-		// everything, then with the world only
-		Vector dir = Vector( other->pev->velocity.x, other->pev->velocity.y, 0 );
-		if( dir.Length() < 1 )
-			dir = Vector( -gpGlobals->v_forward.x, -gpGlobals->v_forward.y, 0 );
-		dir = dir.Normalize();
-		for( int ignore = 0; ignore < 2; ignore++ )
-		{
-			TraceResult tr;
-			TRACE_MONSTER_HULL( edict(), pev->origin, pev->origin + dir * 2, ignore ? ignore_monsters : dont_ignore_monsters, edict(), &tr );
-			ALERT( at_console, "pushable: trace %s dir %.2f %.2f startsolid %d allsolid %d fraction %.2f hit %s\n",
-				ignore ? "world" : "all", dir.x, dir.y, tr.fStartSolid, tr.fAllSolid, tr.flFraction,
-				tr.pHit ? STRING( tr.pHit->v.classname ) : "none" );
-		}
-	}
 	entvars_t* toucher = other->pev;
 	if ( (toucher->flags & FL_ONGROUND) && toucher->groundentity && VARS( toucher->groundentity ) == pev )
 	{

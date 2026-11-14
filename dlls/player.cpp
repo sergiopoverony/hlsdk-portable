@@ -2871,23 +2871,6 @@ void CBasePlayer::PreThink()
 {
 	CZ_MusicPlayerThink( edict() );
 
-	// czeror: diagnostic, the player moved low as if stuck crouched after the radio in
-	// cz_lostcause. Logs the movement state when it changes
-	{
-		static int s_lastState = -1;
-		static float s_lastViewZ = -999.0f;
-		int state = ( pev->flags & ( FL_DUCKING | FL_FROZEN )) | ( pev->bInDuck ? 0x10000000 : 0 ) | ( pev->iuser1 << 24 );
-		if( state != s_lastState || fabs( pev->view_ofs.z - s_lastViewZ ) > 1.0f )
-		{
-			ALERT( at_console, "playerstate: t %.2f ducking %d induck %d frozen %d onground %d iuser1 %d view_z %.0f maxspeed %.0f hull %s\n",
-				gpGlobals->time, ( pev->flags & FL_DUCKING ) ? 1 : 0, pev->bInDuck ? 1 : 0, ( pev->flags & FL_FROZEN ) ? 1 : 0,
-				( pev->flags & FL_ONGROUND ) ? 1 : 0, pev->iuser1, pev->view_ofs.z, pev->maxspeed,
-				( pev->flags & FL_DUCKING ) ? "duck" : "stand" );
-			s_lastState = state;
-			s_lastViewZ = pev->view_ofs.z;
-		}
-	}
-
 	int changed = pev->button ^ m_afButtonLast;
 	m_afButtonPressed = changed & pev->button;
 	m_afButtonReleased = changed & ~pev->button;
