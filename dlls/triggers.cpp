@@ -2516,9 +2516,6 @@ void CTriggerCamera::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 	}
 	SET_VIEW( pActivator->edict(), edict() );
 
-	// CZ:DS: the body of the player must not be seen from the camera
-	pActivator->pev->effects |= EF_NODRAW;
-
 	SET_MODEL(ENT(pev), STRING(pActivator->pev->model) );
 
 	// follow the player down
@@ -2537,8 +2534,6 @@ void CTriggerCamera::FollowTarget( )
 
 	if (m_hTarget == NULL || m_flReturnTime < gpGlobals->time)
 	{
-		m_hPlayer->pev->effects &= ~EF_NODRAW;
-
 		if (m_hPlayer->IsAlive( ))
 		{
 			SET_VIEW( m_hPlayer->edict(), m_hPlayer->edict() );
