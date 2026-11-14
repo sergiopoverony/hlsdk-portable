@@ -524,9 +524,13 @@ void CWorld :: Spawn( void )
 	Precache( );
 }
 
+extern void CZ_PrecacheDirectStart( void );
+
 void CWorld :: Precache( void )
 {
 	g_pLastSpawn = NULL;
+
+	CZ_PrecacheDirectStart();
 	
 	CVAR_SET_STRING("sv_gravity", "800"); // 67ft/sec
 	CVAR_SET_STRING("sv_stepsize", "18");

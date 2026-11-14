@@ -40,6 +40,7 @@
 
 // counterterrorist.cpp
 extern void CZ_SpawnSandstormCTs( void );
+extern void CZ_EquipDirectStart( CBasePlayer *pPlayer );
 
 #define HITGROUP_SHIELD		8
 #define PLAYER_HUD_DAMAGE_MASK	0x774118
@@ -2516,6 +2517,7 @@ void CBasePlayer::UpdateClientData()
 				FireTargets( "game_playerjoin", this, this, USE_TOGGLE, 0 );
 		}
 		CZ_SpawnSandstormCTs();
+		CZ_EquipDirectStart( this );
 		FireTargets( "game_playerspawn", this, this, USE_TOGGLE, 0 );
 		InitStatusBar();
 	}

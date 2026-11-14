@@ -2993,3 +2993,57 @@ void CZ_SpawnSandstormCTs( void )
 	CZ_CreateSandstormCT( "train_ct2", Vector( 1298, 2526, 38 ), 315, NULL );
 	CZ_CreateSandstormCT( "train_ct1", Vector( 1312, 2478, 38 ), 45, "idle4" );
 }
+
+// CZ:DS: some maps have no weapons of their own: the player brings them through the level change. When such a map is started
+// by itself the player has nothing, so give him what the previous map gave (game_player_equip of cz_fastline2).
+// The things must be precached while the map is loading, the player is made later.
+void CZ_PrecacheDirectStart( void )
+{
+	if( FStrEq( STRING( gpGlobals->mapname ), "cz_fastline3" ))
+	{
+		UTIL_PrecacheOther( "weapon_knife" );
+		UTIL_PrecacheOther( "weapon_shieldgun" );
+		UTIL_PrecacheOther( "ammo_45acp" );
+		UTIL_PrecacheOther( "ammo_57mm" );
+	}
+	else if( FStrEq( STRING( gpGlobals->mapname ), "cz_sandstorm2" ))
+	{
+		UTIL_PrecacheOther( "monster_counter_terrorist_sas" );
+	}
+}
+
+void CZ_EquipDirectStart( CBasePlayer *pPlayer )
+{
+	if( !FStrEq( STRING( gpGlobals->mapname ), "cz_fastline3" ))
+		return;
+
+	// he came with the level change and has his things
+	for( size_t i = 0; i < sizeof( pPlayer->m_rgpPlayerItems ) / sizeof( pPlayer->m_rgpPlayerItems[0] ); i++ )
+		if( pPlayer->m_rgpPlayerItems[i] )
+			return;
+
+	ALERT( at_console, "CZ:DS: cz_fastline3 started without the level change, equipping the player\n" );
+
+	edict_t *pent = CREATE_NAMED_ENTITY( MAKE_STRING( "game_player_equip" ));
+	if( FNullEnt( pent ))
+		return;
+
+	static const char *keys[][2] = { { "ammo_45acp", "7" }, { "ammo_57mm", "2" }, { "weapon_knife", "1" }, { "weapon_shieldgun", "1" } };
+	for( size_t i = 0; i < sizeof( keys ) / sizeof( keys[0] ); i++ )
+	{
+		KeyValueData kvd;
+		kvd.szClassName = "game_player_equip";
+		kvd.szKeyName = (char *)keys[i][0];
+		kvd.szValue = (char *)keys[i][1];
+		kvd.fHandled = FALSE;
+		DispatchKeyValue( pent, &kvd );
+	}
+	DispatchSpawn( pent );
+
+	CBaseEntity *pEquip = CBaseEntity::Instance( pent );
+	if( pEquip )
+	{
+		pEquip->Use( pPlayer, pPlayer, USE_TOGGLE, 0 );
+		UTIL_Remove( pEquip );
+	}
+}
